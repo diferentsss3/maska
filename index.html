@@ -1,164 +1,166 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Маска — Анонимный чат</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0716">
+<title>Маска — анонимный чат</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
+<div id="app">
 
-    <!-- ЭКРАН 1: ГЛАВНАЯ -->
-    <div id="screen-home" class="screen active">
-        <div class="top-nav">
-            <div class="nav-tab active">1 · Главная</div>
-            <div class="nav-tab">PLAY ▶</div>
+  <!-- 1. Главная -->
+  <section id="s-home" class="screen active">
+    <header class="topbar">
+      <div class="brand"><span class="logo"><svg><use href="#i-mask"/></svg></span>Маска</div>
+      <span class="chip-safe">Безопасный сервис</span>
+    </header>
+
+    <div class="scroll">
+      <div class="hero card">
+        <div class="masks">
+          <span class="mk mk1"><svg><use href="#i-mask"/></svg></span>
+          <span class="mk mk2"><svg><use href="#i-mask"/></svg></span>
+          <span class="mk mk3"><svg><use href="#i-mask"/></svg></span>
         </div>
+        <div class="online"><i></i><span id="onlineText">Сейчас онлайн</span></div>
+        <h1>Поговори с тем,<br>кого не знаешь</h1>
+        <p class="muted">Случайный собеседник. Без имён, без фото, без следов.</p>
+        <button class="btn primary wide" id="btnFind"><svg><use href="#i-search"/></svg>Найти собеседника</button>
+      </div>
 
-        <div class="content">
-            <div class="logo-area">
-                <div class="logo-icon">🎭</div>
-                <div class="logo-text">
-                    <h1>Маска</h1>
-                    <span>Анонимный чат</span>
-                </div>
-            </div>
+      <div class="row-head"><span class="eyebrow">О чём поговорим</span><a href="#" id="allTopics">Все темы</a></div>
+      <div class="pills">
+        <button class="pill violet" data-topic="any"><svg><use href="#i-chat"/></svg>Любая тема</button>
+        <button class="pill pink" data-topic="flirt"><svg><use href="#i-heart"/></svg>Флирт</button>
+        <button class="pill orange" data-topic="adult"><b>18+</b>Для взрослых</button>
+      </div>
 
-            <div class="gender-selector">
-                <button class="gender-btn active">👨 Парень</button>
-                <button class="gender-btn">👩 Девушка</button>
-                <button class="gender-btn">👽 Любой</button>
-            </div>
-
-            <h2>Поговори с тем,<br>кого не знаешь</h2>
-            <p class="description">Случайный собеседник. Без имён. Без следов.</p>
-
-            <button id="btn-to-topics" class="primary-btn gradient-purple">⚡ Найти собеседника</button>
-
-            <div class="premium-banner">
-                <div class="premium-icon">👑</div>
-                <div class="premium-text">
-                    <strong>Маска Premium</strong>
-                    <span>Фильтры, приоритет и многое другое</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="bottom-nav">
-            <div class="nav-item active">🏠 Главная</div>
-            <div class="nav-item">👤 Профиль</div>
-            <div class="nav-item">💬 Диалоги</div>
-        </div>
+      <button class="premium card" id="btnPremium">
+        <span class="star"><svg><use href="#i-star"/></svg></span>
+        <span class="ptxt"><b>Маска Premium</b><small>Флирт, 18+, фильтры по полу и месту</small></span>
+        <svg class="chev"><use href="#i-chev"/></svg>
+      </button>
     </div>
+  </section>
 
-    <!-- ЭКРАН 2: ВЫБОР ТЕМЫ -->
-    <div id="screen-topics" class="screen">
-        <div class="top-nav">
-            <div class="nav-tab active" onclick="goTo('screen-home')">← Назад</div>
-            <div class="nav-tab">2 · Тема разговора</div>
-        </div>
-
-        <div class="content">
-            <h2>Тема разговора</h2>
-            <p class="description">Выберите, что вам интересно</p>
-
-            <div class="topics-grid">
-                <div class="topic-card selected" data-topic="free">
-                    <span class="t-icon">💬</span>
-                    <span class="t-title">Свободная тема</span>
-                </div>
-                <div class="topic-card" data-topic="adult">
-                    <span class="t-icon">🔥</span>
-                    <span class="t-title">Для взрослых</span>
-                </div>
-                <div class="topic-card" data-topic="games">
-                    <span class="t-icon">🎮</span>
-                    <span class="t-title">Игры</span>
-                </div>
-                <div class="topic-card" data-topic="music">
-                    <span class="t-icon">🎵</span>
-                    <span class="t-title">Музыка</span>
-                </div>
-                <div class="topic-card" data-topic="cinema">
-                    <span class="t-icon">🍿</span>
-                    <span class="t-title">Кино</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="bottom-action">
-            <button id="btn-start-search" class="primary-btn gradient-pink">Начать в этой теме</button>
-        </div>
+  <!-- 2. Тема разговора -->
+  <section id="s-topics" class="screen">
+    <header class="topbar"><button class="icon-btn" data-back><svg><use href="#i-back"/></svg></button></header>
+    <div class="scroll">
+      <h2 class="title">Тема разговора</h2>
+      <p class="muted sub">Подберём тех, с кем говорить о том, что тебе важно</p>
+      <div class="grid" id="topicGrid"></div>
     </div>
+    <footer class="foot">
+      <div class="note" id="topicNote">Флирт и 18+ входят в Маска Premium · 150 ⭐ в месяц</div>
+      <button class="btn pink wide" id="btnSearchTopic">Искать в теме «Флирт»</button>
+    </footer>
+  </section>
 
-    <!-- ЭКРАН 3: 18+ -->
-    <div id="screen-18plus" class="screen">
-        <div class="top-nav">
-            <div class="nav-tab active" onclick="goTo('screen-topics')">← Назад</div>
-            <div class="nav-tab">3 · Подтверждение 18+</div>
-        </div>
-
-        <div class="content center-all">
-            <div class="age-circle">18+</div>
-            <h2>Только для взрослых</h2>
-            <p class="description text-center">Тема «Для взрослых» доступна только пользователям старше 18 лет.</p>
-            
-            <div class="checkbox-container">
-                <input type="checkbox" id="age-checkbox">
-                <label for="age-checkbox">Я подтверждаю, что мне есть 18 лет, и я согласен с правилами сервиса.</label>
-            </div>
-        </div>
-
-        <div class="bottom-action">
-            <button id="btn-confirm-18" class="primary-btn gradient-orange" disabled>Мне есть 18, продолжить</button>
-            <button class="secondary-btn" onclick="goTo('screen-topics')">Вернуться к темам</button>
-        </div>
+  <!-- 3. Подтверждение 18+ -->
+  <section id="s-age" class="screen">
+    <header class="topbar"><button class="icon-btn" data-back><svg><use href="#i-back"/></svg></button></header>
+    <div class="scroll center">
+      <div class="age-ring"><span>18+</span></div>
+      <h2 class="title">Только для взрослых</h2>
+      <p class="muted sub">Тема «Для взрослых» доступна пользователям старше 18 лет. Подтвердите возраст, чтобы продолжить.</p>
+      <label class="check card" id="ageCheck">
+        <input type="checkbox" id="ageBox">
+        <span class="box"><svg><use href="#i-check"/></svg></span>
+        <span>Мне исполнилось 18 лет, я согласен(на) с правилами общения</span>
+      </label>
+      <p class="rules">Запрещены оскорбления, угрозы, реклама и общение с участием несовершеннолетних. Нарушители блокируются.</p>
     </div>
+    <footer class="foot">
+      <button class="btn orange wide" id="btnAgeOk" disabled>Мне есть 18, продолжить</button>
+      <button class="btn ghost wide" data-back>Вернуться к темам</button>
+    </footer>
+  </section>
 
-    <!-- ЭКРАН ЗАГРУЗКИ -->
-    <div id="screen-loading" class="screen center-all">
-        <div class="spinner"></div>
-        <h2>Ищем собеседника...</h2>
-        <p class="description">Обычно это занимает не более 10 секунд</p>
-        <button id="btn-cancel-search" class="secondary-btn mt-20">Отменить</button>
+  <!-- 4. Диалог -->
+  <section id="s-chat" class="screen">
+    <header class="topbar chat-top">
+      <button class="icon-btn" id="chatBack"><svg><use href="#i-back"/></svg></button>
+      <span class="avatar"><svg><use href="#i-mask"/></svg></span>
+      <div class="who"><b>Аноним</b><small id="chatTopic">Флирт</small></div>
+      <button class="icon-btn" id="btnReport" title="Пожаловаться"><svg><use href="#i-flag"/></svg></button>
+      <button class="btn next" id="btnNext">Дальше<svg><use href="#i-chev"/></svg></button>
+    </header>
+    <div class="messages" id="messages"></div>
+    <div class="banner card" id="chatBanner">
+      <span class="star sm"><svg><use href="#i-star"/></svg></span>
+      <span>Нравится собеседник? Premium вернёт его после «Дальше»</span>
+      <svg class="chev"><use href="#i-chev"/></svg>
     </div>
+    <form class="composer" id="composer" autocomplete="off">
+      <input id="msgInput" placeholder="Сообщение" maxlength="1000" enterkeyhint="send">
+      <button class="send" type="submit"><svg><use href="#i-send"/></svg></button>
+    </form>
+  </section>
 
-    <!-- ЭКРАН 4: ЧАТ -->
-    <div id="screen-chat" class="screen">
-        <div class="chat-header">
-            <button id="btn-back-from-chat" class="back-btn">←</button>
-            <div class="peer-info">
-                <span class="peer-name">Собеседник</span>
-                <span class="peer-sub">Сообщения могут быть удалены</span>
-            </div>
-            <button id="btn-stop" class="stop-btn">Стоп</button>
-        </div>
-
-        <div id="chat-messages" class="chat-messages">
-            <div class="system-message">Собеседник найден</div>
-        </div>
-
-        <!-- Быстрые ответы -->
-        <div class="quick-replies" id="quick-replies">
-            <button class="quick-btn" onclick="sendQuick('Привет! Как настроение?')">Привет! Как настроение?</button>
-            <button class="quick-btn" onclick="sendQuick('Как дела?')">Как дела?</button>
-            <button class="quick-btn" onclick="sendQuick('Откуда ты?')">Откуда ты?</button>
-        </div>
-
-        <div class="chat-input-area">
-            <button class="emoji-btn">😊</button>
-            <input type="text" id="message-input" placeholder="Сообщение...">
-            <button id="btn-send" class="send-btn">➤</button>
-        </div>
-        <div class="chat-footer-warning">
-            Не передавайте личные данные (номер телефона, адрес, паспорт).
-        </div>
+  <!-- Профиль -->
+  <section id="s-profile" class="screen">
+    <header class="topbar"><div class="brand">Профиль</div></header>
+    <div class="scroll">
+      <div class="card prof">
+        <span class="avatar big"><svg><use href="#i-mask"/></svg></span>
+        <div><b id="profId">Аноним</b><small class="muted" id="profPlan">Бесплатный план</small></div>
+      </div>
+      <button class="premium card" id="btnPremium2">
+        <span class="star"><svg><use href="#i-star"/></svg></span>
+        <span class="ptxt"><b>Маска Premium</b><small>150 ⭐ в месяц · Флирт, 18+, фильтры</small></span>
+        <svg class="chev"><use href="#i-chev"/></svg>
+      </button>
+      <div class="card list">
+        <div><span>Возраст 18+</span><b id="profAge">не подтверждён</b></div>
+        <div><span>Режим</span><b id="profMode">—</b></div>
+      </div>
+      <p class="rules">Здесь нет имён и фото. Мы не храним переписку дольше, чем идёт диалог.</p>
     </div>
+  </section>
 
-    <!-- Скрипты -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="config.js"></script>
-    <script src="app.js"></script>
+  <nav class="tabbar show" id="tabbar">
+    <button data-tab="home" class="on"><svg><use href="#i-chat"/></svg>Чат</button>
+    <button data-tab="profile"><svg><use href="#i-user"/></svg>Профиль</button>
+  </nav>
+
+  <!-- Premium sheet -->
+  <div class="sheet-bg" id="sheetBg"></div>
+  <div class="sheet" id="sheet">
+    <span class="star big"><svg><use href="#i-star"/></svg></span>
+    <h3>Маска Premium</h3>
+    <p class="muted">Темы «Флирт», «18+», «Музыка», «Игры», «Кино», фильтры по полу и месту, возврат собеседника.</p>
+    <button class="btn primary wide" id="btnBuy">Оформить · 150 ⭐ в месяц</button>
+    <button class="btn ghost wide" id="btnSheetClose">Не сейчас</button>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<!-- SVG sprite -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-mask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v6c0 5-3.6 8.5-8 9-4.4-.5-8-4-8-9z"/><path d="M8 10.5c.8.8 2 .8 2.8 0M13.2 10.5c.8.8 2 .8 2.8 0"/><path d="M9 15c1.8 1.2 4.2 1.2 6 0"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+    <symbol id="i-game" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 10.5v4M6 12.5h4M15.5 11.5h.01M17.5 13.5h.01"/></symbol>
+    <symbol id="i-film" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M8 4v16M16 4v16M4 9h4M4 15h4M16 9h4M16 15h4"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.8 2.7 5.8 6.3.7-4.7 4.3 1.3 6.2L12 16.6 6.4 19.8l1.3-6.2L3 9.3l6.3-.7z"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.7-3.6 3.7-5.5 7.5-5.5s6.8 1.9 7.5 5.5"/></symbol>
+  </defs>
+</svg>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
