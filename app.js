@@ -516,7 +516,16 @@ async function copyText(text) {
   a.remove(); return ok;
 }
 
+/* ---------- Канал ---------- */
+const CHANNEL_URL = CFG.CHANNEL_URL || 'https://t.me/anonmaskachanel';
+function openChannel() {
+  haptic();
+  try { if (tg && tg.openTelegramLink) return tg.openTelegramLink(CHANNEL_URL); } catch (e) {}
+  window.open(CHANNEL_URL, '_blank');
+}
+
 /* ---------- События ---------- */
+$$('[data-channel]').forEach(b => b.onclick = openChannel);
 $('#adminRefresh').onclick = () => { haptic(); loadAdmin(); };
 $('#adminRange').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;

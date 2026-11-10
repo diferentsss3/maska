@@ -200,6 +200,12 @@ svg{width:1em;height:1em;flex:none}
 .list div + div{border-top:1px solid var(--line)}
 .list span{color:var(--muted)}.list b{font-weight:500}
 
+/* channel */
+.channel{display:flex;align-items:center;gap:14px;width:100%;margin-top:10px;padding:13px 16px;text-align:left;transition:transform .12s,background .2s}
+.channel:active{transform:scale(.98);background:var(--glass2)}
+.chico{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:13px;font-size:21px;color:#7cc4ff;
+  background:linear-gradient(145deg,rgba(90,168,255,.28),rgba(90,168,255,.06));border:1px solid rgba(90,168,255,.3)}
+
 /* admin */
 .seg{display:flex;gap:6px;margin:6px 0 0}
 .seg button{height:34px;padding:0 15px;border-radius:99px;font-size:13px;font-weight:600;color:var(--muted);background:var(--glass);border:1px solid var(--line);transition:.2s}
@@ -296,6 +302,12 @@ svg{width:1em;height:1em;flex:none}
         <span class="ptxt"><b>Маска Premium</b><small>Флирт, 18+, фильтры по полу и месту</small></span>
         <svg class="chev"><use href="#i-chev"/></svg>
       </button>
+
+      <button class="channel card" data-channel>
+        <span class="chico"><svg><use href="#i-plane"/></svg></span>
+        <span class="ptxt"><b>Наш канал</b><small>Обновления, акции и новости</small></span>
+        <svg class="chev"><use href="#i-chev"/></svg>
+      </button>
     </div>
   </section>
 
@@ -367,6 +379,11 @@ svg{width:1em;height:1em;flex:none}
       <button class="premium card" id="btnPremium2">
         <span class="star"><svg><use href="#i-star"/></svg></span>
         <span class="ptxt"><b>Маска Premium</b><small>150 ⭐ в месяц · Флирт, 18+, фильтры</small></span>
+        <svg class="chev"><use href="#i-chev"/></svg>
+      </button>
+      <button class="channel card" data-channel>
+        <span class="chico"><svg><use href="#i-plane"/></svg></span>
+        <span class="ptxt"><b>Наш канал</b><small>Обновления, акции и новости</small></span>
         <svg class="chev"><use href="#i-chev"/></svg>
       </button>
       <div class="card list">
@@ -446,7 +463,8 @@ svg{width:1em;height:1em;flex:none}
     <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></symbol>
     <symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m20 11.5-8 8a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7L9.7 17.2a1.7 1.7 0 0 1-2.4-2.4l7.6-7.6"/></symbol>
     <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></symbol>
-    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v5h-5"/></symbol>
+    <symbol id="i-plane" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4 3 11l6 2.2L11 20l3.2-4.3L19 19z"/><path d="m9 13.2 12-9.2"/></symbol>
+    <symbol id="i-refresh"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v5h-5"/></symbol>
     <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.5c0 4.4 3 7.8 7 9.5 4-1.7 7-5.1 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.7-3.6 3.7-5.5 7.5-5.5s6.8 1.9 7.5 5.5"/></symbol>
   </defs>
