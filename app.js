@@ -54,7 +54,7 @@ function go(name, { push = true } = {}) {
   if (push && state.screen !== name) state.stack.push(state.screen);
   state.screen = name;
   $$('.screen').forEach(s => s.classList.toggle('active', s.id === 's-' + name));
-  const tabs = name === 'home' || name === 'profile';
+  const tabs = name === 'home' || name === 'profile' || name === 'admin';
   $('#tabbar').classList.toggle('show', tabs);
   $$('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
   if (tg) {
@@ -64,10 +64,15 @@ function go(name, { push = true } = {}) {
 }
 function back() {
   if (state.screen === 'chat') { leaveChat(); return; }
+  state.afterAge = null;
   const prev = state.stack.pop() || 'home';
   go(prev, { push: false });
 }
-function tab(name) { state.stack = []; go(name, { push: false }); if (name === 'profile') renderProfile(); }
+function tab(name) {
+  state.stack = []; go(name, { push: false });
+  if (name === 'profile') renderProfile();
+  if (name === 'admin') loadAdmin();
+}
 if (tg) tg.BackButton.onClick(back);
 
 /* ---------- Транспорт: сервер или демо ---------- */
@@ -100,6 +105,7 @@ class PollTransport {
     else if (ev === 'message') o({ t: 'msg', text: d.text });
     else if (ev === 'typing') o({ t: 'typing', on: true });
     else if (ev === 'online') o({ t: 'online', n: d.count });
+    else if (ev === 'media') o({ t: 'media', id: d.id, kind: d.kind, mime: d.mime });
   }
   async send(m) {
     try {
@@ -112,15 +118,40 @@ class PollTransport {
       else if (m.t === 'typing') await api('/api/typing');
       else if (m.t === 'leave') await api('/api/stop');
       else if (m.t === 'report') await api('/api/report');
-    } catch (e) {
-      if (e.code === 'premium_required') this.onEvent({ t: 'need_premium' });
-      else if (e.code === 'age_required') this.onEvent({ t: 'need_age' });
-      else if (e.code === 'banned') this.onEvent({ t: 'error', message: 'Доступ временно ограничен за нарушения' });
-      else if (e.code === 'rate_limit') this.onEvent({ t: 'error', message: 'Слишком быстро, подожди секунду' });
-      else if (e.code === 'no_partner') this.onEvent({ t: 'ended' });
-      else if (e.code === 'no_stream') { this.ready = new Promise(res => { this._ready = res; }); this.onEvent({ t: 'error', message: 'Переподключаемся, попробуй ещё раз' }); }
-      else this.onEvent({ t: 'error', message: 'Нет связи с сервером' });
-    }
+    } catch (e) { this.fail(e); }
+  }
+  fail(e) {
+    const err = message => this.onEvent({ t: 'error', message });
+    if (e.code === 'premium_required') this.onEvent({ t: 'need_premium' });
+    else if (e.code === 'age_required') this.onEvent({ t: 'need_age' });
+    else if (e.code === 'media_age') this.onEvent({ t: 'need_media_age' });
+    else if (e.code === 'partner_age') err('Собеседник не подтвердил 18+, фото и видео недоступны');
+    else if (e.code === 'too_large') err('Файл слишком большой');
+    else if (e.code === 'bad_media') err('Формат не поддерживается. Подойдут JPG, PNG, WebP, GIF, MP4, MOV, WebM');
+    else if (e.code === 'busy') err('Сервер занят, попробуй чуть позже');
+    else if (e.code === 'banned') err('Доступ временно ограничен за нарушения');
+    else if (e.code === 'rate_limit') err('Слишком быстро, подожди секунду');
+    else if (e.code === 'no_partner') this.onEvent({ t: 'ended' });
+    else if (e.code === 'no_stream') { this.ready = new Promise(res => { this._ready = res; }); err('Переподключаемся, попробуй ещё раз'); }
+    else err('Нет связи с сервером');
+  }
+  /* Загрузка фото/видео: XHR, чтобы показывать прогресс */
+  sendMedia(blob, onProgress) {
+    return new Promise((resolve, reject) => {
+      const x = new XMLHttpRequest();
+      x.open('POST', CFG.API + '/api/media');
+      x.setRequestHeader('Authorization', 'tma ' + tg.initData);
+      x.setRequestHeader('Content-Type', blob.type || 'application/octet-stream');
+      x.timeout = 180000;
+      x.upload.onprogress = e => { if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total); };
+      x.onload = () => {
+        if (x.status >= 200 && x.status < 300) return resolve();
+        let code; try { code = JSON.parse(x.responseText).error; } catch (_) {}
+        this.fail({ code }); reject(new Error(code || String(x.status)));
+      };
+      x.onerror = x.ontimeout = () => { this.fail({}); reject(new Error('network')); };
+      x.send(blob);
+    });
   }
   close() { this.closed = true; }
 }
@@ -141,6 +172,12 @@ class DemoTransport {
     } else if (m.t === 'next' || m.t === 'leave') {
       this.clear(); this.onEvent({ t: 'ended' });
     }
+  }
+  sendMedia(blob, onProgress) {
+    if (onProgress) onProgress(1);
+    this.onEvent({ t: 'typing', on: true });
+    this.later(() => { this.onEvent({ t: 'typing', on: false }); this.say(['Классно!', 'О, круто, спасибо, что поделился(ась)', 'Хаха, неожиданно)'][Math.random() * 3 | 0]); }, 1500);
+    return Promise.resolve();
   }
   say(text) { this.onEvent({ t: 'msg', text }); }
   close() { this.clear(); }
@@ -171,7 +208,7 @@ async function auth() {
   if (initData && CFG.API && !forceDemo) {
     try {
       const d = await api('/api/me');
-      Object.assign(state.user, { premium: !!d.premium, age18: !!d.ageOk });
+      Object.assign(state.user, { premium: !!d.premium, age18: !!d.ageOk, admin: !!d.admin });
       state.online = d.online ?? null;
       return;
     } catch (e) { /* сервер недоступен → демо */ }
@@ -206,8 +243,19 @@ function begin(topicId) {
   const t = topicById(topicId);
   state.topic = t.id;
   if (!t.free && !state.user.premium && !state.demo) { sheet(true); return; }
-  if (t.adult && !state.user.age18) { $('#ageBox').checked = false; $('#btnAgeOk').disabled = true; go('age'); return; }
+  if (t.adult && !state.user.age18) { showAge(false); return; }
   startChat(t.id);
+}
+
+/* Экран 18+: forMedia — открыт из чата, после подтверждения вернёмся в диалог */
+function showAge(forMedia) {
+  state.afterAge = forMedia ? 'media' : null;
+  $('#ageSub').textContent = forMedia
+    ? 'Фото и видео в чате доступны только взрослым, и только если собеседник тоже подтвердил возраст. Подтвердите, что вам есть 18 лет.'
+    : 'Тема «Для взрослых» доступна пользователям старше 18 лет. Подтвердите возраст, чтобы продолжить.';
+  $('#ageBackBtn').textContent = forMedia ? 'Вернуться в чат' : 'Вернуться к темам';
+  $('#ageBox').checked = false; $('#btnAgeOk').disabled = true;
+  go('age');
 }
 
 /* ---------- Чат ---------- */
@@ -222,6 +270,93 @@ function setTyping(on) {
 }
 function scrollDown() { const b = box(); b.scrollTop = b.scrollHeight; }
 
+/* ---------- Фото и видео ---------- */
+const MB = 1024 * 1024, MEDIA_LIMIT = { image: 10 * MB, video: 30 * MB };
+let objUrls = [], chatEpoch = 0;
+const mkUrl = blob => { const u = URL.createObjectURL(blob); objUrls.push(u); return u; };
+function clearMessages() {
+  chatEpoch++; typingEl = null;
+  box().innerHTML = '';
+  objUrls.forEach(u => URL.revokeObjectURL(u)); objUrls = [];
+}
+function mediaBubble(who, kind) {
+  const el = document.createElement('div'); el.className = 'msg media ' + who;
+  const wrap = document.createElement('div'); wrap.className = 'mwrap';
+  const prog = document.createElement('div'); prog.className = 'mprog hide';
+  wrap.appendChild(prog); el.appendChild(wrap); box().appendChild(el); scrollDown();
+  return {
+    prog,
+    status(text, err) { prog.className = 'mprog' + (err ? ' err' : ''); prog.textContent = text; },
+    done() { prog.className = 'mprog hide'; },
+    show(url, blurred) {
+      const m = document.createElement(kind === 'video' ? 'video' : 'img');
+      if (kind === 'video') { m.src = url + '#t=0.1'; m.controls = true; m.playsInline = true; m.preload = 'metadata'; m.onloadedmetadata = scrollDown; }
+      else { m.src = url; m.alt = ''; m.draggable = false; m.onload = scrollDown; }
+      wrap.insertBefore(m, prog);
+      if (blurred) {
+        wrap.classList.add('blur');
+        const veil = document.createElement('div'); veil.className = 'veil';
+        veil.innerHTML = '<svg><use href="#i-eye"/></svg>Нажми, чтобы посмотреть<small>' + (kind === 'video' ? 'Видео' : 'Фото') + ' от собеседника скрыто</small>';
+        veil.onclick = () => { wrap.classList.remove('blur'); haptic(); };
+        wrap.insertBefore(veil, prog);
+      }
+    },
+  };
+}
+/* Входящее: скачиваем с сервера (после выдачи он файл удаляет) и показываем размытым */
+function receiveMedia(info) {
+  const epoch = chatEpoch, b = mediaBubble('in', info.kind);
+  let gone = false;
+  const load = async () => {
+    b.status('Загрузка…');
+    try {
+      const r = await fetch(CFG.API + '/api/media/' + info.id, { headers: { Authorization: 'tma ' + (tg ? tg.initData : '') } });
+      if (r.status === 404) { gone = true; throw new Error('gone'); }
+      if (!r.ok) throw new Error(String(r.status));
+      const blob = await r.blob();
+      if (epoch !== chatEpoch) return;
+      b.show(mkUrl(blob), true); b.done(); haptic();
+    } catch (e) {
+      if (epoch !== chatEpoch) return;
+      b.status(gone ? 'Файл недоступен' : 'Не удалось загрузить. Нажми, чтобы повторить', true);
+    }
+  };
+  b.prog.onclick = () => { if (!gone && b.prog.classList.contains('err')) load(); };
+  load();
+}
+/* Фото сжимаем и перекодируем в JPEG: меньше трафика, и пропадают EXIF-метки с геолокацией */
+async function shrinkImage(file, max = 1600) {
+  let src, tmp;
+  if (window.createImageBitmap) { try { src = await createImageBitmap(file, { imageOrientation: 'from-image' }); } catch (e) {} }
+  if (!src) {
+    tmp = URL.createObjectURL(file);
+    src = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = tmp; });
+  }
+  const k = Math.min(1, max / Math.max(src.width, src.height));
+  const c = document.createElement('canvas'); c.width = Math.round(src.width * k); c.height = Math.round(src.height * k);
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(src, 0, 0, c.width, c.height);
+  if (src.close) src.close();
+  if (tmp) URL.revokeObjectURL(tmp);
+  return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('toBlob')), 'image/jpeg', 0.85));
+}
+async function sendFile(file) {
+  if (state.chat.status !== 'matched') return toast('Собеседник ещё не найден');
+  const kind = /^video\//.test(file.type) ? 'video' : /^image\//.test(file.type) ? 'image' : null;
+  if (!kind) return toast('Можно отправлять только фото и видео');
+  const epoch = chatEpoch;
+  let blob = file;
+  if (kind === 'image' && file.type !== 'image/gif') {
+    try { blob = await shrinkImage(file); }
+    catch (e) { if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return toast('Не удалось обработать фото. Попробуй JPG или PNG'); }
+  }
+  if (blob.size > MEDIA_LIMIT[kind]) return toast(`Файл слишком большой (максимум ${MEDIA_LIMIT[kind] / MB} МБ)`);
+  if (epoch !== chatEpoch || state.chat.status !== 'matched') return toast('Диалог уже завершён');
+  const b = mediaBubble('out', kind);
+  b.show(mkUrl(blob), false); b.status('0%');
+  try { await tr.sendMedia(blob, p => b.status(Math.round(p * 100) + '%')); b.done(); haptic(); }
+  catch (e) { b.status('Не отправлено', true); }
+}
+
 function onEvent(m) {
   switch (m.t) {
     case 'searching': state.chat.status = 'searching'; setTyping(false); addSys('Ищем собеседника…'); break;
@@ -231,6 +366,8 @@ function onEvent(m) {
       addSys(`Тема: ${topicById(m.topic || state.chat.topic).name} · Общайтесь уважительно`); hapticN('success'); break;
     case 'msg': if (state.screen !== 'chat') break; setTyping(false); addMsg(m.text, 'in'); haptic(); break;
     case 'typing': if (state.screen !== 'chat') break; setTyping(!!m.on); clearTimeout(typingT); if (m.on) typingT = setTimeout(() => setTyping(false), 3500); break;
+    case 'media': if (state.screen !== 'chat') break; setTyping(false); receiveMedia(m); break;
+    case 'need_media_age': state.user.age18 = false; showAge(true); break;
     case 'online': state.online = m.n; renderHome(); break;
     case 'ended':
       if (state.screen !== 'chat') break;
@@ -247,7 +384,7 @@ function onEvent(m) {
 function startChat(topicId) {
   const t = topicById(topicId);
   state.chat = { status: 'searching', topic: t.id };
-  box().innerHTML = '';
+  clearMessages();
   $('#chatTopic').textContent = t.name === 'Для взрослых' ? '18+' : t.name;
   $('#chatBanner').style.display = state.user.premium ? 'none' : '';
   getTransport().send({ t: 'find', topic: t.id });
@@ -261,7 +398,7 @@ function leaveChat() {
 function nextChat() {
   if (!tr) return;
   haptic('medium');
-  box().innerHTML = '';
+  clearMessages();
   tr.send({ t: 'find', topic: state.chat.topic });
 }
 
@@ -286,7 +423,123 @@ async function buyPremium() {
   } catch (e) { toast('Не удалось открыть оплату'); }
 }
 
+/* ---------- Админка ---------- */
+const adm = { days: 30, data: null };
+const fmtN = n => Number(n || 0).toLocaleString('ru-RU');
+const fmtD = s => s.slice(8, 10) + '.' + s.slice(5, 7);
+const fmtK = v => v >= 10000 ? Math.round(v / 1000) + 'к' : v >= 1000 ? (v / 1000).toFixed(1).replace('.0', '') + 'к' : String(Math.round(v));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const renderTabbar = () => { $('#tabAdmin').hidden = !state.user.admin; };
+
+async function loadAdmin() {
+  if (!state.user.admin) return;
+  try {
+    adm.data = await api('/api/admin/stats', { days: adm.days, off: -new Date().getTimezoneOffset() });
+    renderAdmin();
+  } catch (e) { toast(e.status === 403 ? 'Нет доступа' : 'Не удалось загрузить статистику'); }
+}
+
+/* График на SVG: столбцы (за день) + линия (накопительно). Тап/движение по графику показывает значения за день */
+function drawChart(host, labels, bars, line, caption, barColor, lineColor) {
+  const W = 340, H = 170, L = 34, R = 34, T = 10, B = 22, iw = W - L - R, ih = H - T - B, n = labels.length, slot = iw / n;
+  const bm = Math.max(1, ...bars), lm = Math.max(1, ...line);
+  const cx = i => L + (i + .5) * slot;
+  const yb = v => T + ih - v / bm * ih, yl = v => T + ih - v / lm * ih;
+  let s = `<svg viewBox="0 0 ${W} ${H}">`;
+  for (let k = 0; k <= 2; k++) {
+    const y = T + ih - ih * k / 2;
+    s += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" style="stroke:var(--line)"/>`;
+    s += `<text x="${L - 5}" y="${y + 3}" text-anchor="end" style="fill:var(--dim);font-size:9px">${fmtK(bm * k / 2)}</text>`;
+    s += `<text x="${W - R + 5}" y="${y + 3}" style="fill:var(--dim);font-size:9px">${fmtK(lm * k / 2)}</text>`;
+  }
+  const bw = Math.max(1.2, Math.min(14, slot * .68));
+  bars.forEach((v, i) => { if (v > 0) s += `<rect x="${cx(i) - bw / 2}" y="${yb(v)}" width="${bw}" height="${T + ih - yb(v)}" rx="2" style="fill:${barColor};opacity:.85"/>`; });
+  s += `<path d="${line.map((v, i) => (i ? 'L' : 'M') + cx(i).toFixed(1) + ' ' + yl(v).toFixed(1)).join('')}" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" style="stroke:${lineColor}"/>`;
+  [0, Math.floor((n - 1) / 2), n - 1].forEach((i, k) => {
+    if (n > 1 && k && i === 0) return;
+    s += `<text x="${cx(i)}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === 2 ? 'end' : 'middle'}" style="fill:var(--dim);font-size:9px">${fmtD(labels[i])}</text>`;
+  });
+  s += `<line id="mk" y1="${T}" y2="${T + ih}" style="stroke:var(--text);opacity:0;stroke-width:1"/><rect x="${L}" y="${T}" width="${iw}" height="${ih}" fill="transparent"/></svg><div class="ccap"></div>`;
+  host.innerHTML = s;
+  const svg = host.querySelector('svg'), mk = host.querySelector('#mk'), cap = host.querySelector('.ccap');
+  const pick = i => { i = Math.max(0, Math.min(n - 1, i)); mk.setAttribute('x1', cx(i)); mk.setAttribute('x2', cx(i)); mk.style.opacity = .35; cap.textContent = caption(i); };
+  const at = e => { const r = svg.getBoundingClientRect(); pick(Math.floor(((e.clientX - r.left) / r.width * W - L) / slot)); };
+  svg.addEventListener('pointerdown', at); svg.addEventListener('pointermove', at);
+  pick(n - 1);
+}
+
+function renderAdmin() {
+  const d = adm.data; if (!d) return;
+  const t = d.totals, p = adm.days;
+  $('#adminKpis').innerHTML = [
+    ['Пользователей', fmtN(t.users), `+${fmtN(t.newUsers)} за ${p} дн.`],
+    ['Онлайн сейчас', fmtN(t.online), 'в приложении'],
+    ['Premium активен', fmtN(t.premiumNow), 'сейчас подписчиков'],
+    ['Выручка', fmtN(t.revenue) + ' ⭐', `за ${p} дн. · всего ${fmtN(t.revenueAll)} ⭐`],
+    ['Покупок Premium', fmtN(t.purchases), `за ${p} дн. · всего ${fmtN(t.purchasesAll)}`],
+    ['Средний чек', t.purchases ? fmtN(Math.round(t.revenue / t.purchases)) + ' ⭐' : '—', 'за период'],
+  ].map(([a, b, c]) => `<div class="card kpi"><small>${a}</small><b>${b}</b><i>${c}</i></div>`).join('');
+
+  $('#chUsersSub').textContent = `+${fmtN(t.newUsers)} за ${p} дн.`;
+  drawChart($('#chUsers'), d.labels, d.newUsers, d.usersCum,
+    i => `${fmtD(d.labels[i])} · +${fmtN(d.newUsers[i])} новых · всего ${fmtN(d.usersCum[i])}`, 'var(--violet)', 'var(--pink)');
+  $('#chPaySub').textContent = `${fmtN(t.revenue)} ⭐ за ${p} дн.`;
+  drawChart($('#chPay'), d.labels, d.payStars, d.revCum,
+    i => `${fmtD(d.labels[i])} · ${fmtN(d.payCount[i])} покуп. · ${fmtN(d.payStars[i])} ⭐ · всего ${fmtN(d.revCum[i])} ⭐`, 'var(--gold)', 'var(--green)');
+  renderRefs();
+}
+
+function renderRefs() {
+  const d = adm.data, o = d.organic;
+  const conv = (b, s) => s ? Math.round(b / s * 1000) / 10 + '%' : '0%';
+  const rows = d.refs.map(r => `<div class="card ref" data-code="${r.code}">
+    <div class="ref-top"><b>${esc(r.name)}</b><span><button class="mini" data-act="copy">Копировать</button><button class="mini danger" data-act="del">Удалить</button></span></div>
+    <div class="ref-link">${r.link ? esc(r.link) : 'Ссылка появится, когда бот узнает своё имя (задайте BOT_USERNAME в .env)'}</div>
+    <div class="ref-stats">
+      <div><b>${fmtN(r.clicks)}</b><small>переходов</small></div>
+      <div><b>${fmtN(r.signups)}</b><small>новых</small></div>
+      <div><b>${fmtN(r.buyers)}</b><small>купили · ${conv(r.buyers, r.signups)}</small></div>
+      <div><b>${fmtN(r.revenue)} ⭐</b><small>выручка</small></div>
+    </div></div>`).join('');
+  const organic = `<div class="card ref"><div class="ref-top"><b>Без метки</b></div>
+    <div class="ref-link" style="color:var(--muted)">Пришли сами или не через рекламную ссылку</div>
+    <div class="ref-stats"><div><b>—</b><small>переходов</small></div><div><b>${fmtN(o.signups)}</b><small>новых</small></div>
+    <div><b>${fmtN(o.buyers)}</b><small>купили · ${conv(o.buyers, o.signups)}</small></div><div><b>${fmtN(o.revenue)} ⭐</b><small>выручка</small></div></div></div>`;
+  $('#refList').innerHTML = (rows || '<div class="empty">Ссылок пока нет. Создайте первую выше и вставьте её в рекламу.</div>') + organic;
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+  const a = document.createElement('textarea'); a.value = text; a.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(a); a.select(); let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) {}
+  a.remove(); return ok;
+}
+
 /* ---------- События ---------- */
+$('#adminRefresh').onclick = () => { haptic(); loadAdmin(); };
+$('#adminRange').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  adm.days = +b.dataset.days; $$('#adminRange button').forEach(x => x.classList.toggle('on', x === b)); haptic(); loadAdmin();
+};
+$('#refForm').onsubmit = async e => {
+  e.preventDefault();
+  const inp = $('#refName'), name = inp.value.trim();
+  try { await api('/api/admin/ref/create', { name }); inp.value = ''; toast('Ссылка создана'); hapticN('success'); loadAdmin(); }
+  catch (err) { toast(err.code === 'too_many' ? 'Слишком много ссылок, удалите ненужные' : 'Не удалось создать ссылку'); }
+};
+$('#refList').onclick = async e => {
+  const btn = e.target.closest('button[data-act]'); if (!btn) return;
+  const code = btn.closest('.ref').dataset.code, r = adm.data.refs.find(x => x.code === code); if (!r) return;
+  if (btn.dataset.act === 'copy') {
+    if (!r.link) return toast('Ссылка ещё не готова');
+    toast(await copyText(r.link) ? 'Ссылка скопирована' : 'Не удалось скопировать'); haptic();
+  } else {
+    const del = async () => { try { await api('/api/admin/ref/delete', { code }); toast('Ссылка удалена'); loadAdmin(); } catch (err) { toast('Не удалось удалить'); } };
+    const q = `Удалить ссылку «${r.name}»? Статистика по ней пропадёт, а сама ссылка перестанет учитываться.`;
+    tg && tg.showConfirm ? tg.showConfirm(q, ok => ok && del()) : confirm(q) && del();
+  }
+};
 $('#btnFind').onclick = () => { haptic(); begin('any'); };
 $('#allTopics').onclick = e => { e.preventDefault(); openTopics(); };
 $$('.pill').forEach(p => p.onclick = () => openTopics(p.dataset.topic));
@@ -306,6 +559,10 @@ $('#btnAgeOk').onclick = async () => {
   state.user.age18 = true;
   try { localStorage.setItem('maska_age18', '1'); } catch (e) {}
   if (!state.demo) { try { await api('/api/age', { confirm: true }); } catch (e) { toast('Нет связи с сервером'); return; } }
+  if (state.afterAge === 'media') {          // подтверждали возраст ради медиа — возвращаемся в тот же диалог
+    state.afterAge = null; state.stack.pop(); go('chat', { push: false });
+    toast('Готово, теперь можно отправлять фото и видео'); return;
+  }
   startChat(state.topic);
 };
 
@@ -319,6 +576,13 @@ $('#btnReport').onclick = () => {
 };
 $$('#tabbar button').forEach(b => b.onclick = () => tab(b.dataset.tab));
 
+$('#btnAttach').onclick = () => {
+  if (state.chat.status !== 'matched') return toast('Собеседник ещё не найден');
+  if (!state.demo && !state.user.age18) return showAge(true);
+  $('#fileInput').click();
+};
+$('#fileInput').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) sendFile(f); };
+
 let lastTyping = 0;
 $('#msgInput').oninput = () => { const n = Date.now(); if (tr && state.chat.status === 'matched' && n - lastTyping > 2500) { lastTyping = n; tr.send({ t: 'typing' }); } };
 $('#composer').onsubmit = e => {
@@ -331,7 +595,7 @@ $('#composer').onsubmit = e => {
 
 /* ---------- Старт ---------- */
 renderTopics();
-auth().then(() => { if (!state.demo) getTransport(); renderHome(); renderProfile(); });
+auth().then(() => { if (!state.demo) getTransport(); renderHome(); renderProfile(); renderTabbar(); });
 // для проверки экранов из консоли / скриншотов
 window.__maska = { go, state, startChat, openTopics };
 })();

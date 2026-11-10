@@ -37,7 +37,7 @@ svg{width:1em;height:1em;flex:none}
 .screen.active{opacity:1;visibility:visible;transform:none}
 .scroll{flex:1;overflow-y:auto;padding:6px 20px 28px;scrollbar-width:none}
 .scroll::-webkit-scrollbar{display:none}
-#s-home .scroll,#s-profile .scroll{padding-bottom:112px}
+#s-home .scroll,#s-profile .scroll,#s-admin .scroll{padding-bottom:112px}
 .scroll.center{text-align:center}
 .muted{color:var(--muted)}
 .card{background:var(--glass);border:1px solid var(--line);border-radius:var(--r);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
@@ -174,6 +174,23 @@ svg{width:1em;height:1em;flex:none}
 .send{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:21px;color:#fff;background:var(--grad);box-shadow:0 8px 22px -6px rgba(138,107,255,.9);transition:transform .12s}
 .send:active{transform:scale(.92)}
 
+/* media */
+.attach{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:22px;color:var(--muted);flex:none;
+  background:var(--glass);border:1px solid var(--line2);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:transform .12s,background .2s}
+.attach:active{transform:scale(.92);background:var(--glass2)}
+.msg.media{padding:4px;white-space:normal;max-width:min(78%,280px)}
+.mwrap{position:relative;overflow:hidden;border-radius:15px;min-width:150px;min-height:110px;background:rgba(0,0,0,.28)}
+.mwrap img,.mwrap video{display:block;width:auto;max-width:100%;max-height:320px;border-radius:15px;transition:filter .3s}
+.mwrap.blur img,.mwrap.blur video{filter:blur(28px) brightness(.8);transform:scale(1.15);pointer-events:none}
+.veil{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px;
+  font-size:13px;font-weight:600;line-height:1.3;color:#fff;text-align:center;cursor:pointer;background:rgba(7,7,12,.3)}
+.veil svg{font-size:26px}.veil small{font-size:11px;font-weight:500;opacity:.8}
+.mwrap:not(.blur) .veil{display:none}
+.mprog{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:10px;background:rgba(7,7,12,.5);
+  font-size:13px;font-weight:600;line-height:1.3;color:#fff}
+.mprog.hide{display:none}
+.mprog.err{background:rgba(120,20,40,.6);cursor:pointer}
+
 /* profile */
 .prof{display:flex;align-items:center;gap:15px;padding:18px;margin-top:8px}
 .prof div{display:flex;flex-direction:column}
@@ -183,12 +200,48 @@ svg{width:1em;height:1em;flex:none}
 .list div + div{border-top:1px solid var(--line)}
 .list span{color:var(--muted)}.list b{font-weight:500}
 
+/* admin */
+.seg{display:flex;gap:6px;margin:6px 0 0}
+.seg button{height:34px;padding:0 15px;border-radius:99px;font-size:13px;font-weight:600;color:var(--muted);background:var(--glass);border:1px solid var(--line);transition:.2s}
+.seg button.on{color:#fff;background:var(--grad);border-color:transparent;box-shadow:0 8px 20px -8px rgba(138,107,255,.9)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 0}
+.kpi{padding:14px 16px;display:flex;flex-direction:column;gap:3px}
+.kpi small{font-size:12px;color:var(--muted)}
+.kpi b{font-size:25px;font-weight:700;letter-spacing:-.6px}
+.kpi i{font-style:normal;font-size:11.5px;color:var(--dim)}
+.chart{padding:14px 14px 10px;margin-top:12px}
+.ch-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.ch-head b{font-size:15px;font-weight:600}
+.ch-head small{font-size:11.5px;color:var(--muted)}
+.chart svg{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.ccap{min-height:18px;margin-top:6px;font-size:12px;color:var(--text);text-align:center}
+.cleg{display:flex;justify-content:center;gap:14px;margin-top:4px;font-size:11px;color:var(--muted)}
+.cleg i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.refform{display:flex;gap:8px;padding:10px}
+.refform input{flex:1;min-width:0;height:44px;padding:0 14px;border-radius:14px;border:1px solid var(--line2);background:var(--glass);color:var(--text);font:inherit;outline:none}
+.refform input:focus{border-color:rgba(138,107,255,.7)}
+.refform input::placeholder{color:var(--dim)}
+.refform .btn{height:44px;padding:0 18px;font-size:14px;border-radius:14px}
+.ref{padding:14px 16px;margin-top:10px}
+.ref-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ref-top b{font-size:15px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ref-top span{display:flex;gap:6px;flex:none}
+.ref-link{margin:7px 0 12px;font-size:12px;color:#b9a6ff;word-break:break-all;line-height:1.4}
+.ref-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.ref-stats b{display:block;font-size:16px;font-weight:700}
+.ref-stats small{font-size:10.5px;color:var(--muted)}
+.mini{height:30px;padding:0 11px;border-radius:10px;font-size:12px;font-weight:600;background:var(--glass2);border:1px solid var(--line2)}
+.mini:active{transform:scale(.96)}
+.mini.danger{color:#ff9bb0}
+.empty{text-align:center;font-size:13px;color:var(--muted);padding:18px 10px}
+
 /* tabbar */
 .tabbar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));display:none;gap:6px;padding:6px;border-radius:24px;
   background:rgba(22,20,38,.72);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--line2);box-shadow:0 18px 40px -12px rgba(0,0,0,.7)}
 .tabbar.show{display:flex}
 .tabbar button{display:flex;align-items:center;gap:8px;padding:0 20px;height:46px;border-radius:18px;font-size:13px;font-weight:600;color:var(--muted);transition:.25s}
 .tabbar button svg{font-size:20px}
+.tabbar button[hidden]{display:none}
 .tabbar button.on{color:#fff;background:var(--grad);box-shadow:0 8px 22px -8px rgba(138,107,255,.9)}
 
 /* sheet / toast */
@@ -266,7 +319,7 @@ svg{width:1em;height:1em;flex:none}
     <div class="scroll center">
       <div class="age-ring"><span>18+</span></div>
       <h2 class="title">Только для взрослых</h2>
-      <p class="muted sub">Тема «Для взрослых» доступна пользователям старше 18 лет. Подтвердите возраст, чтобы продолжить.</p>
+      <p class="muted sub" id="ageSub">Тема «Для взрослых» доступна пользователям старше 18 лет. Подтвердите возраст, чтобы продолжить.</p>
       <label class="check card" id="ageCheck">
         <input type="checkbox" id="ageBox">
         <span class="box"><svg><use href="#i-check"/></svg></span>
@@ -276,7 +329,7 @@ svg{width:1em;height:1em;flex:none}
     </div>
     <footer class="foot">
       <button class="btn orange wide" id="btnAgeOk" disabled>Мне есть 18, продолжить</button>
-      <button class="btn ghost wide" data-back>Вернуться к темам</button>
+      <button class="btn ghost wide" id="ageBackBtn" data-back>Вернуться к темам</button>
     </footer>
   </section>
 
@@ -296,9 +349,11 @@ svg{width:1em;height:1em;flex:none}
       <svg class="chev"><use href="#i-chev"/></svg>
     </div>
     <form class="composer" id="composer" autocomplete="off">
+      <button class="attach" type="button" id="btnAttach" title="Фото или видео"><svg><use href="#i-clip"/></svg></button>
       <input id="msgInput" placeholder="Сообщение" maxlength="1000" enterkeyhint="send">
       <button class="send" type="submit"><svg><use href="#i-send"/></svg></button>
     </form>
+    <input type="file" id="fileInput" accept="image/*,video/*" hidden>
   </section>
 
   <!-- Профиль -->
@@ -318,13 +373,46 @@ svg{width:1em;height:1em;flex:none}
         <div><span>Возраст 18+</span><b id="profAge">не подтверждён</b></div>
         <div><span>Режим</span><b id="profMode">—</b></div>
       </div>
-      <p class="rules">Здесь нет имён и фото. Мы не храним переписку дольше, чем идёт диалог.</p>
+      <p class="rules">Здесь нет имён и профильных фото. Мы не храним переписку и присланные фото и видео дольше, чем идёт диалог.</p>
+    </div>
+  </section>
+
+  <!-- Админка (вкладка видна только админам из ADMIN_IDS) -->
+  <section id="s-admin" class="screen">
+    <header class="topbar">
+      <div class="brand">Админка</div>
+      <button class="icon-btn" id="adminRefresh" title="Обновить"><svg><use href="#i-refresh"/></svg></button>
+    </header>
+    <div class="scroll">
+      <div class="seg" id="adminRange">
+        <button data-days="7">7 дней</button><button data-days="30" class="on">30 дней</button><button data-days="90">90 дней</button>
+      </div>
+      <div class="kpis" id="adminKpis"></div>
+
+      <div class="card chart">
+        <div class="ch-head"><b>Рост пользователей</b><small id="chUsersSub"></small></div>
+        <div id="chUsers"></div>
+        <div class="cleg"><span><i style="background:var(--violet)"></i>новые за день</span><span><i style="background:var(--pink)"></i>всего</span></div>
+      </div>
+      <div class="card chart">
+        <div class="ch-head"><b>Покупки Premium</b><small id="chPaySub"></small></div>
+        <div id="chPay"></div>
+        <div class="cleg"><span><i style="background:var(--gold)"></i>⭐ за день</span><span><i style="background:var(--green)"></i>⭐ всего</span></div>
+      </div>
+
+      <div class="row-head"><span class="eyebrow">Реферальные ссылки</span></div>
+      <form class="card refform" id="refForm" autocomplete="off">
+        <input id="refName" placeholder="Название, например «Канал про музыку»" maxlength="40">
+        <button class="btn primary" type="submit">Создать</button>
+      </form>
+      <div id="refList"></div>
     </div>
   </section>
 
   <nav class="tabbar show" id="tabbar">
     <button data-tab="home" class="on"><svg><use href="#i-chat"/></svg>Чат</button>
     <button data-tab="profile"><svg><use href="#i-user"/></svg>Профиль</button>
+    <button data-tab="admin" id="tabAdmin" hidden><svg><use href="#i-shield"/></svg>Админ</button>
   </nav>
 
   <!-- Premium sheet -->
@@ -356,6 +444,10 @@ svg{width:1em;height:1em;flex:none}
     <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
     <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
     <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></symbol>
+    <symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m20 11.5-8 8a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7L9.7 17.2a1.7 1.7 0 0 1-2.4-2.4l7.6-7.6"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v5h-5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.5c0 4.4 3 7.8 7 9.5 4-1.7 7-5.1 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.7-3.6 3.7-5.5 7.5-5.5s6.8 1.9 7.5 5.5"/></symbol>
   </defs>
 </svg>
