@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Маска — Анонимный чат</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+    <!-- ЭКРАН 1: ГЛАВНАЯ -->
+    <div id="screen-home" class="screen active">
+        <div class="top-nav">
+            <div class="nav-tab active">1 · Главная</div>
+            <div class="nav-tab">PLAY ▶</div>
+        </div>
+
+        <div class="content">
+            <div class="logo-area">
+                <div class="logo-icon">🎭</div>
+                <div class="logo-text">
+                    <h1>Маска</h1>
+                    <span>Анонимный чат</span>
+                </div>
+            </div>
+
+            <div class="gender-selector">
+                <button class="gender-btn active">👨 Парень</button>
+                <button class="gender-btn">👩 Девушка</button>
+                <button class="gender-btn">👽 Любой</button>
+            </div>
+
+            <h2>Поговори с тем,<br>кого не знаешь</h2>
+            <p class="description">Случайный собеседник. Без имён. Без следов.</p>
+
+            <button id="btn-to-topics" class="primary-btn gradient-purple">⚡ Найти собеседника</button>
+
+            <div class="premium-banner">
+                <div class="premium-icon">👑</div>
+                <div class="premium-text">
+                    <strong>Маска Premium</strong>
+                    <span>Фильтры, приоритет и многое другое</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bottom-nav">
+            <div class="nav-item active">🏠 Главная</div>
+            <div class="nav-item">👤 Профиль</div>
+            <div class="nav-item">💬 Диалоги</div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН 2: ВЫБОР ТЕМЫ -->
+    <div id="screen-topics" class="screen">
+        <div class="top-nav">
+            <div class="nav-tab active" onclick="goTo('screen-home')">← Назад</div>
+            <div class="nav-tab">2 · Тема разговора</div>
+        </div>
+
+        <div class="content">
+            <h2>Тема разговора</h2>
+            <p class="description">Выберите, что вам интересно</p>
+
+            <div class="topics-grid">
+                <div class="topic-card selected" data-topic="free">
+                    <span class="t-icon">💬</span>
+                    <span class="t-title">Свободная тема</span>
+                </div>
+                <div class="topic-card" data-topic="adult">
+                    <span class="t-icon">🔥</span>
+                    <span class="t-title">Для взрослых</span>
+                </div>
+                <div class="topic-card" data-topic="games">
+                    <span class="t-icon">🎮</span>
+                    <span class="t-title">Игры</span>
+                </div>
+                <div class="topic-card" data-topic="music">
+                    <span class="t-icon">🎵</span>
+                    <span class="t-title">Музыка</span>
+                </div>
+                <div class="topic-card" data-topic="cinema">
+                    <span class="t-icon">🍿</span>
+                    <span class="t-title">Кино</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-action">
+            <button id="btn-start-search" class="primary-btn gradient-pink">Начать в этой теме</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН 3: 18+ -->
+    <div id="screen-18plus" class="screen">
+        <div class="top-nav">
+            <div class="nav-tab active" onclick="goTo('screen-topics')">← Назад</div>
+            <div class="nav-tab">3 · Подтверждение 18+</div>
+        </div>
+
+        <div class="content center-all">
+            <div class="age-circle">18+</div>
+            <h2>Только для взрослых</h2>
+            <p class="description text-center">Тема «Для взрослых» доступна только пользователям старше 18 лет.</p>
+            
+            <div class="checkbox-container">
+                <input type="checkbox" id="age-checkbox">
+                <label for="age-checkbox">Я подтверждаю, что мне есть 18 лет, и я согласен с правилами сервиса.</label>
+            </div>
+        </div>
+
+        <div class="bottom-action">
+            <button id="btn-confirm-18" class="primary-btn gradient-orange" disabled>Мне есть 18, продолжить</button>
+            <button class="secondary-btn" onclick="goTo('screen-topics')">Вернуться к темам</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ЗАГРУЗКИ -->
+    <div id="screen-loading" class="screen center-all">
+        <div class="spinner"></div>
+        <h2>Ищем собеседника...</h2>
+        <p class="description">Обычно это занимает не более 10 секунд</p>
+        <button id="btn-cancel-search" class="secondary-btn mt-20">Отменить</button>
+    </div>
+
+    <!-- ЭКРАН 4: ЧАТ -->
+    <div id="screen-chat" class="screen">
+        <div class="chat-header">
+            <button id="btn-back-from-chat" class="back-btn">←</button>
+            <div class="peer-info">
+                <span class="peer-name">Собеседник</span>
+                <span class="peer-sub">Сообщения могут быть удалены</span>
+            </div>
+            <button id="btn-stop" class="stop-btn">Стоп</button>
+        </div>
+
+        <div id="chat-messages" class="chat-messages">
+            <div class="system-message">Собеседник найден</div>
+        </div>
+
+        <!-- Быстрые ответы -->
+        <div class="quick-replies" id="quick-replies">
+            <button class="quick-btn" onclick="sendQuick('Привет! Как настроение?')">Привет! Как настроение?</button>
+            <button class="quick-btn" onclick="sendQuick('Как дела?')">Как дела?</button>
+            <button class="quick-btn" onclick="sendQuick('Откуда ты?')">Откуда ты?</button>
+        </div>
+
+        <div class="chat-input-area">
+            <button class="emoji-btn">😊</button>
+            <input type="text" id="message-input" placeholder="Сообщение...">
+            <button id="btn-send" class="send-btn">➤</button>
+        </div>
+        <div class="chat-footer-warning">
+            Не передавайте личные данные (номер телефона, адрес, паспорт).
+        </div>
+    </div>
+
+    <!-- Скрипты -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
