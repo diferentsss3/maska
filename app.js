@@ -2,6 +2,14 @@
 'use strict';
 const CFG = window.MASKA_CONFIG;
 const tg = window.Telegram && window.Telegram.WebApp;
+// Адрес API: из ссылки ?api=https://xxx.trycloudflare.com (его ставит бот), иначе из config.js
+(() => {
+  try {
+    const q = new URLSearchParams(location.search).get('api');
+    if (q && /^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/.test(q)) { CFG.API = q; localStorage.setItem('maska_api', q); }
+    else if (!CFG.API) { const saved = localStorage.getItem('maska_api'); if (saved) CFG.API = saved; }
+  } catch (e) {}
+})();
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
@@ -10,7 +18,7 @@ const TOPICS = [
   { id: 'any',   name: 'Любая тема',   sub: 'Всё, что захочется',    icon: 'chat',  tone: 'violet', free: true },
   { id: 'flirt', name: 'Флирт',        sub: 'Лёгкий разговор · PRO', icon: 'heart', tone: 'pink',   adult: true },
   { id: 'adult', name: 'Для взрослых', sub: 'Только взрослым · 18+', icon: '18',    tone: 'orange', adult: true },
-  { id: 'music', name: 'Музыка',       sub: 'Треки и плейлисты',     icon: 'music', tone: 'violet' },
+  { id: 'music', name: 'Музыка',       sub: 'Треки и плейлисты',     icon: 'music', tone: 'blue' },
   { id: 'games', name: 'Игры',         sub: 'Игры и болтовня',       icon: 'game',  tone: 'green' },
   { id: 'movies',name: 'Кино',         sub: 'Фильмы и сериалы',      icon: 'film',  tone: 'yellow' },
 ];
@@ -29,7 +37,7 @@ try { state.user.age18 = localStorage.getItem('maska_age18') === '1'; } catch (e
 /* ---------- Telegram ---------- */
 if (tg) {
   tg.ready(); tg.expand();
-  try { tg.setHeaderColor('#0a0615'); tg.setBackgroundColor('#0a0615'); tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {}
+  try { tg.setHeaderColor('#07070c'); tg.setBackgroundColor('#07070c'); tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {}
 }
 const haptic = (k = 'light') => { try { tg && tg.HapticFeedback.impactOccurred(k); } catch (e) {} };
 const hapticN = k => { try { tg && tg.HapticFeedback.notificationOccurred(k); } catch (e) {} };
@@ -63,19 +71,35 @@ function tab(name) { state.stack = []; go(name, { push: false }); if (name === '
 if (tg) tg.BackButton.onClick(back);
 
 /* ---------- Транспорт: сервер или демо ---------- */
-class SSETransport {
+class PollTransport {
   constructor(onEvent) {
-    this.onEvent = onEvent;
+    this.onEvent = onEvent; this.closed = false; this.fails = 0;
     this.ready = new Promise(res => { this._ready = res; });
-    const es = this.es = new EventSource(`${CFG.API}/api/events?auth=${encodeURIComponent(tg.initData)}`);
-    const on = (name, fn) => es.addEventListener(name, e => { let d = {}; try { d = JSON.parse(e.data || '{}'); } catch (x) {} fn(d); });
-    on('ready', () => this._ready());
-    on('matched', d => onEvent({ t: 'matched', topic: d.topic }));
-    on('ended', () => onEvent({ t: 'ended' }));
-    on('message', d => onEvent({ t: 'msg', text: d.text }));
-    on('typing', () => onEvent({ t: 'typing', on: true }));
-    on('online', d => onEvent({ t: 'online', n: d.count }));
-    es.onerror = () => onEvent({ t: 'closed' });
+    this.loop();
+  }
+  async loop() {
+    while (!this.closed) {
+      try {
+        const r = await fetch(CFG.API + '/api/poll', { headers: { Authorization: 'tma ' + tg.initData } });
+        if (!r.ok) throw new Error(r.status);
+        const evs = await r.json();
+        if (this.fails >= 2) this.onEvent({ t: 'reconnected' });
+        this.fails = 0;
+        for (const e of evs) this.handle(e.event, e.data || {});
+      } catch (err) {
+        if (++this.fails === 2) this.onEvent({ t: 'closed' });
+        await new Promise(res => setTimeout(res, Math.min(1000 * this.fails, 5000)));
+      }
+    }
+  }
+  handle(ev, d) {
+    const o = this.onEvent;
+    if (ev === 'ready') this._ready();
+    else if (ev === 'matched') o({ t: 'matched', topic: d.topic });
+    else if (ev === 'ended') o({ t: 'ended' });
+    else if (ev === 'message') o({ t: 'msg', text: d.text });
+    else if (ev === 'typing') o({ t: 'typing', on: true });
+    else if (ev === 'online') o({ t: 'online', n: d.count });
   }
   async send(m) {
     try {
@@ -94,10 +118,11 @@ class SSETransport {
       else if (e.code === 'banned') this.onEvent({ t: 'error', message: 'Доступ временно ограничен за нарушения' });
       else if (e.code === 'rate_limit') this.onEvent({ t: 'error', message: 'Слишком быстро, подожди секунду' });
       else if (e.code === 'no_partner') this.onEvent({ t: 'ended' });
+      else if (e.code === 'no_stream') { this.ready = new Promise(res => { this._ready = res; }); this.onEvent({ t: 'error', message: 'Переподключаемся, попробуй ещё раз' }); }
       else this.onEvent({ t: 'error', message: 'Нет связи с сервером' });
     }
   }
-  close() { try { this.es.close(); } catch (e) {} }
+  close() { this.closed = true; }
 }
 
 class DemoTransport {
@@ -143,7 +168,7 @@ async function api(path, body) {
 async function auth() {
   const initData = tg && tg.initData;
   const forceDemo = /[?&]demo=1/.test(location.search);
-  if (initData && !forceDemo) {
+  if (initData && CFG.API && !forceDemo) {
     try {
       const d = await api('/api/me');
       Object.assign(state.user, { premium: !!d.premium, age18: !!d.ageOk });
@@ -187,7 +212,7 @@ function begin(topicId) {
 
 /* ---------- Чат ---------- */
 let tr = null, typingEl = null, typingT = null;
-const getTransport = () => tr || (tr = state.demo ? new DemoTransport(onEvent) : new SSETransport(onEvent));
+const getTransport = () => tr || (tr = state.demo ? new DemoTransport(onEvent) : new PollTransport(onEvent));
 const box = () => $('#messages');
 function addSys(text) { const d = document.createElement('div'); d.className = 'sys'; d.textContent = text; box().appendChild(d); scrollDown(); }
 function addMsg(text, who) { const d = document.createElement('div'); d.className = 'msg ' + who; d.textContent = text; box().appendChild(d); scrollDown(); }
@@ -214,6 +239,7 @@ function onEvent(m) {
     case 'need_age': state.user.age18 = false; state.chat.status = 'idle'; state.stack = ['topics']; go('age', { push: false }); break;
     case 'premium': state.user.premium = true; toast('Premium активирован ⭐'); break;
     case 'error': toast(m.message || 'Что-то пошло не так'); break;
+    case 'reconnected': if (state.screen === 'chat') toast('Связь восстановлена'); break;
     case 'closed': if (state.screen === 'chat' && state.chat.status !== 'idle') { addSys('Соединение потеряно. Нажми «Дальше»'); state.chat.status = 'idle'; } break;
   }
 }
