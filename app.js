@@ -54,7 +54,7 @@ function go(name, { push = true } = {}) {
   if (push && state.screen !== name) state.stack.push(state.screen);
   state.screen = name;
   $$('.screen').forEach(s => s.classList.toggle('active', s.id === 's-' + name));
-  const tabs = name === 'home' || name === 'profile' || name === 'admin';
+  const tabs = name === 'home' || name === 'profile' || name === 'admin' || name === 'dating';
   $('#tabbar').classList.toggle('show', tabs);
   $$('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
   if (tg) {
@@ -65,13 +65,17 @@ function go(name, { push = true } = {}) {
 function back() {
   if (state.screen === 'chat') { leaveChat(); return; }
   state.afterAge = null;
+  if (state.screen === 'dchat') D.chat = null;
   const prev = state.stack.pop() || 'home';
   go(prev, { push: false });
+  if (prev === 'dating' && state.user.age18) refreshPairs();
 }
 function tab(name) {
+  if (name === 'dating' && !state.demo && !state.user.age18) { state.stack = []; showAge('dating'); return; }   // знакомства только 18+
   state.stack = []; go(name, { push: false });
   if (name === 'profile') renderProfile();
   if (name === 'admin') loadAdmin();
+  if (name === 'dating') loadDating();
 }
 if (tg) tg.BackButton.onClick(back);
 
@@ -106,6 +110,7 @@ class PollTransport {
     else if (ev === 'typing') o({ t: 'typing', on: true });
     else if (ev === 'online') o({ t: 'online', n: d.count });
     else if (ev === 'media') o({ t: 'media', id: d.id, kind: d.kind, mime: d.mime });
+    else if (ev === 'dating') o({ t: 'dating', d });
   }
   async send(m) {
     try {
@@ -209,6 +214,7 @@ async function auth() {
     try {
       const d = await api('/api/me');
       Object.assign(state.user, { premium: !!d.premium, age18: !!d.ageOk, admin: !!d.admin });
+      D.unread = (d.dating && d.dating.unread) || 0;
       state.online = d.online ?? null;
       return;
     } catch (e) { /* сервер недоступен → демо */ }
@@ -247,13 +253,16 @@ function begin(topicId) {
   startChat(t.id);
 }
 
-/* Экран 18+: forMedia — открыт из чата, после подтверждения вернёмся в диалог */
-function showAge(forMedia) {
-  state.afterAge = forMedia ? 'media' : null;
-  $('#ageSub').textContent = forMedia
+/* Экран 18+. mode: 'media' — из чата (после подтверждения вернёмся в диалог), 'dating' — вкладка «Знакомства», иначе тема «Для взрослых» */
+function showAge(mode) {
+  if (mode === true) mode = 'media';
+  state.afterAge = mode || null;
+  $('#ageSub').textContent = mode === 'media'
     ? 'Фото и видео в чате доступны только взрослым, и только если собеседник тоже подтвердил возраст. Подтвердите, что вам есть 18 лет.'
-    : 'Тема «Для взрослых» доступна пользователям старше 18 лет. Подтвердите возраст, чтобы продолжить.';
-  $('#ageBackBtn').textContent = forMedia ? 'Вернуться в чат' : 'Вернуться к темам';
+    : mode === 'dating'
+      ? 'Знакомства доступны только взрослым. Подтвердите, что вам есть 18 лет, чтобы создать анкету и смотреть другие.'
+      : 'Тема «Для взрослых» доступна пользователям старше 18 лет. Подтвердите возраст, чтобы продолжить.';
+  $('#ageBackBtn').textContent = mode === 'media' ? 'Вернуться в чат' : mode === 'dating' ? 'Назад' : 'Вернуться к темам';
   $('#ageBox').checked = false; $('#btnAgeOk').disabled = true;
   go('age');
 }
@@ -367,7 +376,8 @@ function onEvent(m) {
     case 'msg': if (state.screen !== 'chat') break; setTyping(false); addMsg(m.text, 'in'); haptic(); break;
     case 'typing': if (state.screen !== 'chat') break; setTyping(!!m.on); clearTimeout(typingT); if (m.on) typingT = setTimeout(() => setTyping(false), 3500); break;
     case 'media': if (state.screen !== 'chat') break; setTyping(false); receiveMedia(m); break;
-    case 'need_media_age': state.user.age18 = false; showAge(true); break;
+    case 'need_media_age': state.user.age18 = false; showAge('media'); break;
+    case 'dating': onDating(m.d); break;
     case 'online': state.online = m.n; renderHome(); break;
     case 'ended':
       if (state.screen !== 'chat') break;
@@ -435,7 +445,7 @@ async function loadAdmin() {
   if (!state.user.admin) return;
   try {
     adm.data = await api('/api/admin/stats', { days: adm.days, off: -new Date().getTimezoneOffset() });
-    renderAdmin();
+    renderAdmin(); loadMod();
   } catch (e) { toast(e.status === 403 ? 'Нет доступа' : 'Не удалось загрузить статистику'); }
 }
 
@@ -478,6 +488,8 @@ function renderAdmin() {
     ['Выручка', fmtN(t.revenue) + ' ⭐', `за ${p} дн. · всего ${fmtN(t.revenueAll)} ⭐`],
     ['Покупок Premium', fmtN(t.purchases), `за ${p} дн. · всего ${fmtN(t.purchasesAll)}`],
     ['Средний чек', t.purchases ? fmtN(Math.round(t.revenue / t.purchases)) + ' ⭐' : '—', 'за период'],
+    ['Анкет', fmtN(t.profiles), 'в Знакомствах'],
+    ['Пар', fmtN(t.pairs), 'взаимных лайков'],
   ].map(([a, b, c]) => `<div class="card kpi"><small>${a}</small><b>${b}</b><i>${c}</i></div>`).join('');
 
   $('#chUsersSub').textContent = `+${fmtN(t.newUsers)} за ${p} дн.`;
@@ -515,6 +527,387 @@ async function copyText(text) {
   try { ok = document.execCommand('copy'); } catch (e) {}
   a.remove(); return ok;
 }
+
+/* ---------- Знакомства ---------- */
+const D = { view: 'feed', me: undefined, queue: [], loading: false, busy: false, likes: 0, premium: false, pairs: [], unread: 0, chat: null, edit: null, username: false, matchMid: null };
+const ask = (q, fn) => (tg && tg.showConfirm ? tg.showConfirm(q, ok => ok && fn()) : confirm(q) && fn());
+
+/* Фото анкет отдаёт сервер только с авторизацией: тянем blob-ом и кэшируем ссылку */
+const photoUrls = new Map(), photoReq = new Map();
+function getPhoto(id) {
+  if (photoUrls.has(id)) return Promise.resolve(photoUrls.get(id));
+  if (!photoReq.has(id)) {
+    photoReq.set(id, fetch(CFG.API + '/api/dating/photo/' + id, { headers: { Authorization: 'tma ' + (tg ? tg.initData : '') } })
+      .then(r => (r.ok ? r.blob() : Promise.reject(new Error(r.status))))
+      .then(b => { const u = URL.createObjectURL(b); photoUrls.set(id, u); return u; })
+      .catch(() => null)
+      .finally(() => photoReq.delete(id)));
+  }
+  return photoReq.get(id);
+}
+function setPhoto(img, id) {
+  if (!img) return;
+  img.dataset.pid = id || '';
+  if (id && photoUrls.has(id)) { img.src = photoUrls.get(id); return; }
+  img.removeAttribute('src');
+  if (id) getPhoto(id).then(u => { if (u && img.dataset.pid === id) img.src = u; });
+}
+async function uploadPhoto(blob) {
+  const r = await fetch(CFG.API + '/api/dating/photo', { method: 'POST', headers: { Authorization: 'tma ' + (tg ? tg.initData : ''), 'Content-Type': blob.type || 'image/jpeg' }, body: blob });
+  if (!r.ok) { const e = new Error(r.status); try { e.code = (await r.json()).error; } catch (x) {} throw e; }
+  return (await r.json()).id;
+}
+
+/* Состояния вкладки: нет анкеты, скрыта, пусто, ошибка */
+function dState(kind) {
+  const S = {
+    demo:      ['i-heart', 'Нет связи с сервером', 'Знакомства работают только при подключении к серверу.', null],
+    noprofile: ['i-heart', 'Создай анкету', 'Добавь фото и расскажи о себе, чтобы смотреть анкеты и знакомиться. Её увидят только те, кто подтвердил 18+.', ['Создать анкету', 'edit']],
+    banned:    ['i-flag', 'Анкета скрыта', 'На твою анкету поступили жалобы, и пока её не проверят, другим она не видна. Если это ошибка, напиши в наш канал.', ['Открыть канал', 'channel']],
+    dbanned:   ['i-flag', 'Доступ закрыт', 'Знакомства отключены для твоего аккаунта из-за нарушений правил.', null],
+    empty:     ['i-search', 'Пока всё', 'Анкеты закончились. Загляни позже: новые появляются каждый день.', ['Обновить', 'reload']],
+    error:     ['i-flag', 'Не удалось загрузить', 'Проверь соединение и попробуй ещё раз.', ['Повторить', 'reload']],
+  }[kind];
+  const withTabs = kind === 'empty' || kind === 'error';
+  $('#dTabs').hidden = !withTabs;
+  if (!withTabs) { D.view = 'feed'; $('#dFeed').hidden = false; $('#dPairs').hidden = true; }
+  $('#dActions').hidden = true; $('#dLikes').hidden = true;
+  $('#dEdit').hidden = kind === 'demo' || kind === 'dbanned';
+  $('#dStage').innerHTML = `<div class="dempty"><span class="dico"><svg><use href="#${S[0]}"/></svg></span><h3>${S[1]}</h3><p class="muted">${S[2]}</p>${S[3] ? `<button class="btn primary" data-dact="${S[3][1]}">${S[3][0]}</button>` : ''}</div>`;
+}
+function dFail(e) {
+  if (e.code === 'age_required') { state.user.age18 = false; showAge('dating'); }
+  else if (e.code === 'dating_banned') dState('dbanned');
+  else if (e.code === 'profile_banned') { if (D.me) D.me.banned = true; dState('banned'); }
+  else if (e.code === 'no_profile') { D.me = null; dState('noprofile'); }
+  else dState('error');
+}
+
+async function loadDating() {
+  if (state.demo) return dState('demo');
+  try { const d = await api('/api/dating/me'); D.me = d.profile; D.username = !!d.username; }
+  catch (e) { return dFail(e); }
+  if (!D.me) return dState('noprofile');
+  if (D.me.banned) return dState('banned');
+  $('#dEdit').hidden = false; $('#dTabs').hidden = false;
+  setView(D.view);
+  if (D.view === 'feed') refreshPairs();
+}
+function setView(v) {
+  D.view = v;
+  $$('#dTabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  $('#dFeed').hidden = v !== 'feed'; $('#dPairs').hidden = v !== 'pairs';
+  if (v === 'pairs') { renderPairs(); refreshPairs(); } else loadFeed();
+}
+
+/* ----- лента анкет ----- */
+async function loadFeed() {
+  if (D.loading || !D.me || D.me.banned) return;
+  D.loading = true;
+  if (!D.queue.length) renderStage();
+  try {
+    const d = await api('/api/dating/feed', { exclude: D.queue.map(p => p.pid) });
+    const have = new Set(D.queue.map(p => p.pid));
+    d.profiles.forEach(p => { if (!have.has(p.pid)) D.queue.push(p); });
+    D.likes = d.likes || 0; D.premium = !!d.premium; D.loading = false;
+  } catch (e) { D.loading = false; if (!D.queue.length) return dFail(e); }
+  renderLikes(); renderStage();
+}
+function renderLikes() {
+  const el = $('#dLikes'), n = D.likes;
+  if (!n || !D.queue.length) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = `<span class="star sm"><svg><use href="#i-heart"/></svg></span><span>${D.premium ? `Тебя лайкнули: ${n}. Они показаны первыми` : `Тебя лайкнули: ${n}. Premium покажет их первыми`}</span>${D.premium ? '' : '<svg class="chev"><use href="#i-chev"/></svg>'}`;
+}
+function renderStage() {
+  const st = $('#dStage');
+  if (!D.queue.length) {
+    if (!D.loading) return dState('empty');
+    $('#dActions').hidden = true; $('#dLikes').hidden = true;
+    st.innerHTML = '<div class="dempty"><span class="dico spin"><svg><use href="#i-heart"/></svg></span><p class="muted">Ищем анкеты…</p></div>';
+    return;
+  }
+  $('#dActions').hidden = false; st.innerHTML = '';
+  if (D.queue[1]) st.appendChild(cardEl(D.queue[1], false));
+  const top = cardEl(D.queue[0], true); st.appendChild(top); attachDrag(top);
+  D.queue.slice(0, 3).forEach(p => p.photos.forEach(getPhoto));   // подгружаем заранее
+}
+function cardEl(p, top) {
+  const el = document.createElement('div');
+  el.className = 'dcard ' + (top ? 'top' : 'under');
+  el.innerHTML = `<img class="dimg" alt="" draggable="false">
+    <div class="dbars">${p.photos.length > 1 ? p.photos.map((_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('') : ''}</div>
+    <div class="dshade"></div>
+    <div class="dinfo"><div class="dname"><b>${esc(p.name)}</b><span>${p.age}</span></div>
+      ${p.city ? `<div class="dcity"><svg><use href="#i-pin"/></svg>${esc(p.city)}</div>` : ''}
+      ${p.bio ? `<p class="dbio">${esc(p.bio)}</p>` : ''}</div>
+    <div class="dstamp like">Нравится</div><div class="dstamp nope">Дальше</div>`;
+  el._p = p; el._i = 0;
+  setPhoto(el.querySelector('.dimg'), p.photos[0]);
+  return el;
+}
+function cardPhoto(el, d) {
+  const i = Math.max(0, Math.min(el._p.photos.length - 1, el._i + d));
+  if (i === el._i) return;
+  el._i = i; setPhoto(el.querySelector('.dimg'), el._p.photos[i]);
+  $$('.dbars i', el).forEach((b, k) => b.classList.toggle('on', k === i)); haptic();
+}
+/* Свайп: вправо — лайк, влево — дальше; тап по краям — листать фото */
+function attachDrag(el) {
+  let sx = 0, sy = 0, dx = 0, on = false, moved = false;
+  const like = el.querySelector('.dstamp.like'), nope = el.querySelector('.dstamp.nope');
+  const reset = () => { el.style.transform = ''; like.style.opacity = nope.style.opacity = 0; };
+  el.addEventListener('pointerdown', e => {
+    if (D.busy) return;
+    on = true; moved = false; sx = e.clientX; sy = e.clientY; dx = 0;
+    try { el.setPointerCapture(e.pointerId); } catch (x) {}
+    el.style.transition = 'none';
+  });
+  el.addEventListener('pointermove', e => {
+    if (!on) return;
+    dx = e.clientX - sx; const dy = e.clientY - sy;
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) moved = true;
+    el.style.transform = `translate(${dx}px,${dy * .25}px) rotate(${dx / 18}deg)`;
+    like.style.opacity = Math.max(0, Math.min(1, dx / 90)); nope.style.opacity = Math.max(0, Math.min(1, -dx / 90));
+  });
+  const end = e => {
+    if (!on) return; on = false; el.style.transition = '';
+    if (!moved) { reset(); const r = el.getBoundingClientRect(), x = e.clientX - r.left; if (x < r.width * .4) cardPhoto(el, -1); else if (x > r.width * .6) cardPhoto(el, 1); }
+    else if (dx > 100) decide(1);
+    else if (dx < -100) decide(0);
+    else reset();
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', () => { on = false; el.style.transition = ''; reset(); });
+}
+async function decide(v) {
+  if (D.busy || !D.queue.length) return;
+  D.busy = true; haptic();
+  const p = D.queue[0], el = $('#dStage .dcard.top');
+  if (el) {
+    const s = el.querySelector(v ? '.like' : '.nope'); if (s) s.style.opacity = 1;
+    el.style.transition = 'transform .28s ease, opacity .28s';
+    el.style.transform = `translate(${v ? 130 : -130}%,0) rotate(${v ? 20 : -20}deg)`; el.style.opacity = 0;
+  }
+  await new Promise(r => setTimeout(r, 240));
+  D.queue.shift(); D.busy = false; renderStage();
+  if (D.queue.length < 3) loadFeed();
+  try {
+    const r = await api('/api/dating/swipe', { pid: p.pid, v });
+    if (r.match) showMatch(r.match);
+  } catch (e) {
+    if (e.code === 'not_found') return;                               // анкету уже удалили
+    if (e.code === 'age_required' || e.code === 'no_profile' || e.code === 'dating_banned') return dFail(e);
+    D.queue.unshift(p); renderStage(); toast(e.code === 'rate_limit' ? 'Слишком быстро, подожди секунду' : 'Нет связи с сервером');
+  }
+}
+function showMatch(m) {
+  hapticN('success'); D.matchMid = m.mid;
+  $('#dmName').textContent = m.partner.name;
+  setPhoto($('#dmMe'), D.me && D.me.photos[0]); setPhoto($('#dmThem'), m.partner.photos[0]);
+  $('#dMatch').hidden = false; refreshPairs();
+}
+
+/* ----- пары и переписка ----- */
+async function refreshPairs() {
+  try { D.pairs = (await api('/api/dating/matches')).matches; } catch (e) { return; }
+  D.unread = D.pairs.reduce((n, m) => n + m.unread, 0);
+  renderBadges();
+  if (D.view === 'pairs' && state.screen === 'dating') renderPairs();
+}
+function renderBadges() {
+  const t = $('#dDot'); t.textContent = D.unread > 9 ? '9+' : D.unread; t.classList.toggle('show', D.unread > 0);
+  const b = $('#dPairBadge'); b.textContent = D.unread; b.hidden = !D.unread;
+}
+const timeShort = ts => { const d = new Date(ts); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }); };
+function renderPairs() {
+  const box = $('#dPairs');
+  if (!D.pairs.length) {
+    box.innerHTML = '<div class="dempty"><span class="dico"><svg><use href="#i-chat"/></svg></span><h3>Пока нет пар</h3><p class="muted">Лайкай анкеты. Когда симпатия окажется взаимной, пара появится здесь.</p></div>';
+    return;
+  }
+  box.innerHTML = D.pairs.map(m => `<button class="pair card${m.unread ? ' unread' : ''}" data-mid="${m.mid}">
+    <span class="pav"><svg><use href="#i-mask"/></svg><img alt=""></span>
+    <span class="pinfo"><b>${esc(m.partner.name)}, ${m.partner.age}</b><small>${m.last ? (m.last.mine ? 'Вы: ' : '') + esc(m.last.text) : 'Напишите первым'}</small></span>
+    <span class="pmeta"><small>${timeShort(m.last ? m.last.ts : m.ts)}</small>${m.unread ? `<i class="pbadge">${m.unread}</i>` : ''}</span></button>`).join('');
+  $$('.pair', box).forEach((el, i) => setPhoto(el.querySelector('img'), D.pairs[i].partner.photos[0]));
+}
+function dBubble(mine, text) {
+  const box = $('#dMsgs'), s = box.querySelector('.sys'); if (s) s.remove();
+  const d = document.createElement('div'); d.className = 'msg ' + (mine ? 'out' : 'in'); d.textContent = text;
+  box.appendChild(d); box.scrollTop = box.scrollHeight;
+}
+async function openDChat(mid) {
+  const m = D.pairs.find(x => x.mid === mid); if (!m) return;
+  D.chat = { mid, partner: m.partner };
+  $('#dcName').textContent = m.partner.name + ', ' + m.partner.age; $('#dcSub').textContent = m.partner.city || '';
+  setPhoto($('#dcImg'), m.partner.photos[0]); $('#dcTg').hidden = !m.partner.tg;
+  $('#dMsgs').innerHTML = ''; $('#dInput').value = '';
+  go('dchat');
+  try {
+    const d = await api('/api/dating/chat', { mid });
+    if (!D.chat || D.chat.mid !== mid) return;
+    D.chat.partner = d.partner; $('#dcTg').hidden = !d.partner.tg;
+    if (!d.msgs.length) { const s = document.createElement('div'); s.className = 'sys'; s.textContent = 'Вы понравились друг другу. Начните разговор'; $('#dMsgs').appendChild(s); }
+    d.msgs.forEach(x => dBubble(x.mine, x.text));
+    m.unread = 0; D.unread = D.pairs.reduce((n, p) => n + p.unread, 0); renderBadges();
+  } catch (e) { toast('Не удалось открыть переписку'); if (state.screen === 'dchat') back(); }
+}
+function onDating(d) {
+  if (d.k === 'match') { hapticN('success'); toast('💘 У вас новая пара!'); refreshPairs(); }
+  else if (d.k === 'msg') {
+    if (state.screen === 'dchat' && D.chat && D.chat.mid === d.mid) { dBubble(false, d.text); haptic(); api('/api/dating/read', { mid: d.mid }).catch(() => {}); }
+    else { haptic(); refreshPairs(); if (state.screen !== 'dating') toast('💬 Новое сообщение в «Знакомствах»'); }
+  } else if (d.k === 'unmatch') {
+    if (state.screen === 'dchat' && D.chat && D.chat.mid === d.mid) { toast('Пара удалена'); back(); }
+    refreshPairs();
+  }
+}
+
+/* ----- моя анкета ----- */
+const segSet = (sel, v) => $$(sel + ' button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+const bioCount = () => { $('#dpCnt').textContent = $('#dpBio').value.length + '/300'; };
+function openEditor() {
+  const p = D.me;
+  D.edit = { photos: p ? [...p.photos] : [], uploading: 0, gender: p ? p.gender : null, seeking: p ? p.seeking : null };
+  $('#dpName').value = p ? p.name : ''; $('#dpAge').value = p ? p.age : ''; $('#dpCity').value = p ? p.city : ''; $('#dpBio').value = p ? p.bio : '';
+  $('#dpTg').checked = !!(p && p.showTg && D.username); $('#dpTg').disabled = !D.username; $('#dpTgHint').hidden = D.username;
+  $('#dpActive').checked = p ? p.active : true; $('#dpActiveRow').hidden = !p; $('#dpDelete').hidden = !p;
+  segSet('#dpGender', D.edit.gender); segSet('#dpSeek', D.edit.seeking); bioCount(); renderSlots();
+  go('dprofile');
+}
+function renderSlots() {
+  const e = D.edit, box = $('#dpSlots'); box.innerHTML = '';
+  e.photos.forEach((id, i) => {
+    const s = document.createElement('div'); s.className = 'dslot filled';
+    s.innerHTML = `<img alt=""><button type="button" class="dslot-x" aria-label="Убрать фото"><svg><use href="#i-x"/></svg></button>${i === 0 ? '<small>Главное</small>' : ''}`;
+    setPhoto(s.querySelector('img'), id);
+    s.querySelector('button').onclick = () => { e.photos.splice(i, 1); renderSlots(); haptic(); };
+    box.appendChild(s);
+  });
+  for (let k = 0; k < e.uploading; k++) { const s = document.createElement('div'); s.className = 'dslot'; s.innerHTML = '<small class="ld">Загрузка…</small>'; box.appendChild(s); }
+  if (e.photos.length + e.uploading < 3) {
+    const s = document.createElement('button'); s.type = 'button'; s.className = 'dslot add'; s.innerHTML = '<svg><use href="#i-plus"/></svg>';
+    s.onclick = () => $('#dpFile').click(); box.appendChild(s);
+  }
+}
+async function saveProfile() {
+  const ed = D.edit; if (!ed) return;
+  if (ed.uploading) return toast('Подожди, фото ещё загружается');
+  const name = $('#dpName').value.trim(), age = parseInt($('#dpAge').value, 10), city = $('#dpCity').value.trim(), bio = $('#dpBio').value.trim();
+  if (name.length < 2) return toast('Введи имя (от 2 символов)');
+  if (!(age >= 18 && age <= 99)) return toast('Возраст: от 18 до 99');
+  if (!ed.gender) return toast('Укажи, кто ты');
+  if (!ed.seeking) return toast('Укажи, кого ищешь');
+  if (!ed.photos.length) return toast('Добавь хотя бы одно фото');
+  const btn = $('#dpSave'); btn.disabled = true;
+  try {
+    const r = await api('/api/dating/save', { name, age, city, bio, gender: ed.gender, seeking: ed.seeking, photos: ed.photos, showTg: $('#dpTg').checked, active: D.me ? $('#dpActive').checked : true });
+    D.me = r.profile; D.queue = []; D.edit = null;
+    hapticN('success'); toast('Анкета сохранена'); back(); loadDating();
+  } catch (e) {
+    toast(e.code === 'bad_profile' ? 'Проверь заполнение анкеты' : e.code === 'rate_limit' ? 'Слишком часто, подожди минуту' : e.code === 'dating_banned' ? 'Доступ закрыт' : 'Не удалось сохранить');
+  } finally { btn.disabled = false; }
+}
+
+/* ----- модерация анкет (в админке) ----- */
+async function loadMod() {
+  if (!state.user.admin) return;
+  try { renderMod((await api('/api/admin/dating/reports')).list); } catch (e) {}
+}
+function renderMod(list) {
+  const box = $('#modList');
+  if (!list.length) { box.innerHTML = '<div class="empty">Жалоб на анкеты нет</div>'; return; }
+  box.innerHTML = list.map(p => `<div class="card ref" data-pid="${p.pid}">
+    <div class="ref-top"><b>${esc(p.name)}, ${p.age}${p.city ? ' · ' + esc(p.city) : ''}</b><span class="modst${p.banned ? ' bad' : ''}">${p.banned ? 'скрыта' : 'жалоб: ' + p.reports}</span></div>
+    <div class="mthumbs">${p.photos.map(() => '<img alt="">').join('')}</div>
+    ${p.bio ? `<div class="ref-link" style="color:var(--text)">${esc(p.bio)}</div>` : ''}
+    <div class="mact"><button class="mini" data-act="restore">Вернуть</button><button class="mini danger" data-act="delete">Удалить</button><button class="mini danger" data-act="ban">Удалить и бан</button></div></div>`).join('');
+  $$('.card', box).forEach((el, i) => $$('img', el).forEach((im, k) => setPhoto(im, list[i].photos[k])));
+}
+
+/* ----- обработчики ----- */
+$('#dTabs').onclick = e => { const b = e.target.closest('button'); if (b && b.dataset.v !== D.view) { haptic(); setView(b.dataset.v); } };
+$('#dStage').onclick = e => {
+  const b = e.target.closest('[data-dact]'); if (!b) return;
+  if (b.dataset.dact === 'edit') openEditor();
+  else if (b.dataset.dact === 'reload') { D.queue = []; loadFeed(); }
+  else if (b.dataset.dact === 'channel') openChannel();
+};
+$('#dEdit').onclick = () => { haptic(); openEditor(); };
+$('#dLikes').onclick = () => { if (!D.premium) sheet(true); };
+$('#dLike').onclick = () => decide(1);
+$('#dSkip').onclick = () => decide(0);
+$('#dRep').onclick = () => {
+  const p = D.queue[0]; if (!p) return;
+  ask('Пожаловаться на эту анкету?', async () => {
+    if (D.queue[0] === p) { D.queue.shift(); renderStage(); }
+    try { await api('/api/dating/report', { pid: p.pid }); toast('Жалоба отправлена. Спасибо!'); } catch (e) { toast('Не удалось отправить жалобу'); }
+    if (D.queue.length < 3) loadFeed();
+  });
+};
+$('#dmClose').onclick = () => { $('#dMatch').hidden = true; };
+$('#dmWrite').onclick = async () => { $('#dMatch').hidden = true; await refreshPairs(); openDChat(D.matchMid); };
+$('#dPairs').onclick = e => { const b = e.target.closest('.pair'); if (b) { haptic(); openDChat(b.dataset.mid); } };
+$('#dComposer').onsubmit = async e => {
+  e.preventDefault();
+  const inp = $('#dInput'), text = inp.value.trim(); if (!text || !D.chat) return;
+  const mid = D.chat.mid; inp.value = ''; dBubble(true, text); haptic();
+  try { await api('/api/dating/send', { mid, text }); }
+  catch (err) { toast(err.code === 'not_found' ? 'Пара больше недоступна' : err.code === 'rate_limit' ? 'Слишком быстро, подожди секунду' : 'Не отправлено'); }
+};
+$('#dcTg').onclick = () => {
+  const u = D.chat && D.chat.partner.tg; if (!u) return;
+  const link = 'https://t.me/' + u;
+  try { if (tg && tg.openTelegramLink) return tg.openTelegramLink(link); } catch (e) {}
+  window.open(link, '_blank');
+};
+$('#dcMenu').onclick = () => {
+  if (!D.chat) return; const mid = D.chat.mid;
+  const done = async report => {
+    try { await api('/api/dating/unmatch', { mid, report }); } catch (e) { return toast('Не удалось удалить пару'); }
+    toast(report ? 'Пара удалена, жалоба отправлена' : 'Пара удалена'); if (state.screen === 'dchat') back();
+  };
+  if (tg && tg.showPopup) {
+    try {
+      tg.showPopup({ title: 'Удалить пару?', message: 'Переписка исчезнет, а анкета больше не покажется.',
+        buttons: [{ id: 'del', type: 'destructive', text: 'Удалить' }, { id: 'rep', type: 'destructive', text: 'Удалить и пожаловаться' }, { type: 'cancel' }] },
+        id => { if (id === 'del') done(false); else if (id === 'rep') done(true); });
+      return;
+    } catch (e) {}
+  }
+  if (confirm('Удалить пару и переписку?')) done(false);
+};
+$('#dpGender').onclick = e => { const b = e.target.closest('button'); if (b && D.edit) { D.edit.gender = b.dataset.v; segSet('#dpGender', b.dataset.v); haptic(); } };
+$('#dpSeek').onclick = e => { const b = e.target.closest('button'); if (b && D.edit) { D.edit.seeking = b.dataset.v; segSet('#dpSeek', b.dataset.v); haptic(); } };
+$('#dpBio').oninput = bioCount;
+$('#dpFile').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = ''; const ed = D.edit; if (!ed) return;
+  for (const f of files) {
+    if (ed.photos.length + ed.uploading >= 3) break;
+    ed.uploading++; renderSlots();
+    try {
+      const blob = await shrinkImage(f, 1080), id = await uploadPhoto(blob);
+      photoUrls.set(id, URL.createObjectURL(blob)); ed.photos.push(id);
+    } catch (err) {
+      toast(err.code === 'photo_limit' ? 'Слишком много загруженных фото. Сохрани анкету и попробуй снова'
+        : err.code === 'bad_media' ? 'Фото не подошло. Попробуй JPG или PNG'
+        : err.code === 'rate_limit' ? 'Слишком быстро, подожди минуту'
+        : err.code === 'too_large' ? 'Фото слишком большое' : 'Не удалось загрузить фото');
+    } finally { ed.uploading--; if (D.edit === ed) renderSlots(); }
+  }
+};
+$('#dpSave').onclick = saveProfile;
+$('#dpDelete').onclick = () => ask('Удалить анкету? Фото, пары и переписки пропадут безвозвратно.', async () => {
+  try { await api('/api/dating/delete'); } catch (e) { return toast('Не удалось удалить анкету'); }
+  D.me = null; D.queue = []; D.pairs = []; D.unread = 0; D.edit = null; renderBadges(); toast('Анкета удалена'); back(); loadDating();
+});
+$('#modList').onclick = e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const pid = b.closest('[data-pid]').dataset.pid, act = b.dataset.act;
+  const run = async () => { try { await api('/api/admin/dating/action', { pid, act }); toast('Готово'); loadAdmin(); } catch (err) { toast('Не удалось выполнить'); } };
+  if (act === 'restore') run(); else ask(act === 'ban' ? 'Удалить анкету и навсегда закрыть пользователю Знакомства?' : 'Удалить анкету?', run);
+};
 
 /* ---------- Канал ---------- */
 const CHANNEL_URL = CFG.CHANNEL_URL || 'https://t.me/anonmaskachanel';
@@ -568,6 +961,9 @@ $('#btnAgeOk').onclick = async () => {
   state.user.age18 = true;
   try { localStorage.setItem('maska_age18', '1'); } catch (e) {}
   if (!state.demo) { try { await api('/api/age', { confirm: true }); } catch (e) { toast('Нет связи с сервером'); return; } }
+  if (state.afterAge === 'dating') {          // подтверждали возраст ради знакомств — открываем вкладку
+    state.afterAge = null; state.stack = []; tab('dating'); return;
+  }
   if (state.afterAge === 'media') {          // подтверждали возраст ради медиа — возвращаемся в тот же диалог
     state.afterAge = null; state.stack.pop(); go('chat', { push: false });
     toast('Готово, теперь можно отправлять фото и видео'); return;
@@ -587,7 +983,7 @@ $$('#tabbar button').forEach(b => b.onclick = () => tab(b.dataset.tab));
 
 $('#btnAttach').onclick = () => {
   if (state.chat.status !== 'matched') return toast('Собеседник ещё не найден');
-  if (!state.demo && !state.user.age18) return showAge(true);
+  if (!state.demo && !state.user.age18) return showAge('media');
   $('#fileInput').click();
 };
 $('#fileInput').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) sendFile(f); };
@@ -604,7 +1000,7 @@ $('#composer').onsubmit = e => {
 
 /* ---------- Старт ---------- */
 renderTopics();
-auth().then(() => { if (!state.demo) getTransport(); renderHome(); renderProfile(); renderTabbar(); });
+auth().then(() => { if (!state.demo) getTransport(); renderHome(); renderProfile(); renderTabbar(); renderBadges(); });
 // для проверки экранов из консоли / скриншотов
 window.__maska = { go, state, startChat, openTopics };
 })();

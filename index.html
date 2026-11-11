@@ -200,6 +200,101 @@ svg{width:1em;height:1em;flex:none}
 .list div + div{border-top:1px solid var(--line)}
 .list span{color:var(--muted)}.list b{font-weight:500}
 
+/* dating */
+[hidden]{display:none!important}
+.tabbar button{position:relative}
+.tdot{position:absolute;top:5px;right:7px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;display:none;place-items:center;
+  font-style:normal;font-size:10px;font-weight:700;color:#fff;background:var(--pink);box-shadow:0 0 0 2px rgba(22,20,38,.9)}
+.tdot.show{display:grid}
+@media (max-width:440px){.tabbar button:not(.on) span{display:none}.tabbar button{padding:0 15px}}
+.dseg{margin:8px 20px 0}
+.seg button b{display:inline-block;min-width:18px;height:18px;line-height:18px;margin-left:6px;padding:0 5px;border-radius:9px;font-size:11px;font-weight:700;color:#fff;background:var(--pink)}
+.dview{flex:1;display:flex;flex-direction:column;min-height:0;padding:12px 20px 104px}
+.dstage{position:relative;flex:1;min-height:0}
+.dcard{position:absolute;inset:0;border-radius:26px;overflow:hidden;background:#15142a;border:1px solid var(--line2);
+  box-shadow:0 22px 50px -22px rgba(0,0,0,.85);user-select:none;-webkit-user-select:none;will-change:transform}
+.dcard.top{touch-action:none;cursor:grab;transition:transform .25s ease}
+.dcard.under{transform:scale(.94) translateY(12px);opacity:.65;pointer-events:none}
+.dimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;background:linear-gradient(160deg,#241f4a,#15142a)}
+.dbars{position:absolute;top:10px;left:12px;right:12px;display:flex;gap:5px;pointer-events:none;z-index:2}
+.dbars i{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.3)}
+.dbars i.on{background:#fff}
+.dshade{position:absolute;left:0;right:0;bottom:0;height:58%;background:linear-gradient(0deg,rgba(7,7,12,.94),rgba(7,7,12,.55) 55%,transparent);pointer-events:none}
+.dinfo{position:absolute;left:18px;right:18px;bottom:16px;pointer-events:none}
+.dname{display:flex;align-items:baseline;gap:9px}
+.dname b{font-size:27px;font-weight:700;letter-spacing:-.6px}
+.dname span{font-size:22px;font-weight:500;opacity:.9}
+.dcity{display:flex;align-items:center;gap:5px;margin-top:2px;font-size:13px;color:#d9d5ee}
+.dbio{margin-top:8px;font-size:14px;line-height:1.4;color:#ece9fb;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.dstamp{position:absolute;top:34px;padding:5px 12px;border:3px solid;border-radius:10px;font-size:19px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:0;pointer-events:none;z-index:2}
+.dstamp.like{left:20px;color:var(--green);border-color:var(--green);transform:rotate(-12deg)}
+.dstamp.nope{right:20px;color:var(--pink);border-color:var(--pink);transform:rotate(12deg)}
+.dactions{display:flex;justify-content:center;align-items:center;gap:18px;padding-top:14px}
+.dbtn{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-size:27px;background:var(--glass2);border:1px solid var(--line2);backdrop-filter:blur(12px);transition:transform .12s}
+.dbtn:active{transform:scale(.9)}
+.dbtn.skip{color:#ff8fa8}
+.dbtn.like{width:74px;height:74px;font-size:32px;color:#fff;background:var(--grad);border-color:transparent;box-shadow:0 14px 30px -8px rgba(255,92,138,.7)}
+.dbtn.like svg path{fill:currentColor}
+.dbtn.rep{width:44px;height:44px;font-size:18px;color:var(--muted)}
+.dlikes{display:flex;align-items:center;gap:11px;margin:0 0 10px;padding:9px 13px;font-size:12.5px;color:var(--muted);cursor:pointer;border:1px solid transparent;
+  background:linear-gradient(#12111d,#12111d) padding-box,linear-gradient(120deg,rgba(255,208,114,.5),rgba(138,107,255,.3)) border-box}
+.dlikes span:nth-child(2){flex:1}
+.dempty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 14px;text-align:center}
+.dempty h3{font-size:21px;font-weight:700;letter-spacing:-.4px}
+.dempty p{font-size:13.5px;max-width:290px;margin-bottom:6px}
+.dempty .btn{height:50px}
+.dico{display:grid;place-items:center;width:78px;height:78px;border-radius:25px;font-size:36px;color:#ff9ec0;margin-bottom:4px;
+  background:linear-gradient(145deg,rgba(255,92,138,.28),rgba(138,107,255,.12));border:1px solid rgba(255,92,138,.3)}
+.dico.spin{animation:beat 1.1s ease-in-out infinite}
+@keyframes beat{50%{transform:scale(1.12)}}
+.dpairs{overflow-y:auto;scrollbar-width:none}
+.dpairs::-webkit-scrollbar{display:none}
+.dpairs .dempty{position:static;padding:70px 14px 0}
+.pair{display:flex;align-items:center;gap:13px;width:100%;flex:none;margin-bottom:9px;padding:11px 12px;text-align:left}
+.pair:active{background:var(--glass2)}
+.pav{position:relative;width:54px;height:54px;border-radius:50%;overflow:hidden;flex:none;display:grid;place-items:center;font-size:24px;color:#fff;
+  background:linear-gradient(145deg,#8a6bff,#ff5c8a);border:1.5px solid var(--line2)}
+.pav img,.avatar.dav img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.avatar.dav{position:relative;overflow:hidden}
+.pinfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pinfo b{font-size:15.5px;font-weight:600}
+.pinfo small{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pair.unread .pinfo small{color:var(--text);font-weight:500}
+.pmeta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none;font-size:11.5px;color:var(--dim)}
+.pbadge{min-width:20px;height:20px;padding:0 6px;border-radius:10px;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:700;color:#fff;background:var(--grad)}
+.dform{display:flex;flex-direction:column;gap:16px;margin-top:6px}
+.dform .check{margin-top:0}
+.dform .rules{margin:0 4px}
+.fld{display:flex;flex-direction:column;gap:7px}
+.fld>label{font-size:12px;font-weight:600;letter-spacing:.3px;color:var(--muted)}
+.fld input[type=text],.fld textarea{width:100%;height:48px;padding:0 16px;border-radius:14px;border:1px solid var(--line2);background:var(--glass);color:var(--text);font:inherit;outline:none;transition:border-color .2s,box-shadow .2s}
+.fld textarea{height:104px;padding:12px 16px;resize:none;line-height:1.4}
+.fld input:focus,.fld textarea:focus{border-color:rgba(138,107,255,.7);box-shadow:0 0 0 4px rgba(138,107,255,.14)}
+.fld input::placeholder,.fld textarea::placeholder{color:var(--dim)}
+.fld .cnt{align-self:flex-end;font-size:11px;color:var(--dim)}
+.fld .seg{margin:0}.fld .seg button{flex:1}
+.row2{display:grid;grid-template-columns:1fr 92px;gap:10px}
+.dslots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.dslot{position:relative;aspect-ratio:3/4;border-radius:16px;overflow:hidden;display:grid;place-items:center;font-size:28px;color:var(--muted);
+  border:1px dashed var(--line2);background:var(--glass)}
+.dslot.filled{border-style:solid}
+.dslot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.dslot small{position:absolute;left:0;right:0;bottom:7px;text-align:center;font-size:11px;font-weight:600;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+.dslot .ld{position:static;color:var(--muted);text-shadow:none}
+.dslot-x{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:14px;color:#fff;background:rgba(7,7,12,.72)}
+.dmatch{position:absolute;inset:0;z-index:15;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(3,2,10,.84);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:pop .3s}
+.dm-in{width:100%;max-width:340px;text-align:center}
+.dm-in h2{font-size:36px;font-weight:800;letter-spacing:-1px}
+.dm-in p{font-size:14px;margin-top:6px}
+.dm-avs{display:flex;justify-content:center;margin:24px 0 28px}
+.dm-av{position:relative;width:112px;height:112px;border-radius:50%;overflow:hidden;border:3px solid #fff;background:linear-gradient(145deg,#8a6bff,#ff5c8a);box-shadow:0 14px 34px -8px rgba(255,92,138,.6)}
+.dm-av+.dm-av{margin-left:-22px}
+.dm-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mthumbs{display:flex;gap:8px;margin:10px 0 4px}
+.mthumbs img{width:64px;height:84px;object-fit:cover;border-radius:10px;background:var(--glass2)}
+.mact{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.modst{font-size:12px;font-weight:600;color:var(--gold)}.modst.bad{color:#ff9bb0}
+
 /* channel */
 .channel{display:flex;align-items:center;gap:14px;width:100%;margin-top:10px;padding:13px 16px;text-align:left;transition:transform .12s,background .2s}
 .channel:active{transform:scale(.98);background:var(--glass2)}
@@ -390,8 +485,70 @@ svg{width:1em;height:1em;flex:none}
         <div><span>Возраст 18+</span><b id="profAge">не подтверждён</b></div>
         <div><span>Режим</span><b id="profMode">—</b></div>
       </div>
-      <p class="rules">Здесь нет имён и профильных фото. Мы не храним переписку и присланные фото и видео дольше, чем идёт диалог.</p>
+      <p class="rules">В анонимном чате нет имён, а переписка и присланные фото и видео не сохраняются после диалога. Анкеты и переписка в «Знакомствах» хранятся, пока вы не удалите анкету.</p>
     </div>
+  </section>
+
+  <!-- Знакомства: анкеты, пары -->
+  <section id="s-dating" class="screen">
+    <header class="topbar">
+      <div class="brand">Знакомства</div>
+      <button class="icon-btn" id="dEdit" title="Моя анкета"><svg><use href="#i-user"/></svg></button>
+    </header>
+    <div class="seg dseg" id="dTabs" hidden>
+      <button data-v="feed" class="on">Анкеты</button><button data-v="pairs">Пары<b id="dPairBadge" hidden></b></button>
+    </div>
+    <div class="dview" id="dFeed">
+      <div class="dlikes card" id="dLikes" hidden></div>
+      <div class="dstage" id="dStage"></div>
+      <div class="dactions" id="dActions" hidden>
+        <button class="dbtn skip" id="dSkip" title="Дальше"><svg><use href="#i-x"/></svg></button>
+        <button class="dbtn like" id="dLike" title="Нравится"><svg><use href="#i-heart"/></svg></button>
+        <button class="dbtn rep" id="dRep" title="Пожаловаться"><svg><use href="#i-flag"/></svg></button>
+      </div>
+    </div>
+    <div class="dview dpairs" id="dPairs" hidden></div>
+  </section>
+
+  <!-- Моя анкета -->
+  <section id="s-dprofile" class="screen">
+    <header class="topbar"><button class="icon-btn" data-back><svg><use href="#i-back"/></svg></button><div class="brand">Моя анкета</div></header>
+    <div class="scroll">
+      <div class="dform">
+        <div class="fld"><label>Фото (до 3, первое будет главным)</label><div class="dslots" id="dpSlots"></div></div>
+        <div class="row2">
+          <div class="fld"><label>Имя</label><input type="text" id="dpName" maxlength="24" placeholder="Как к тебе обращаться"></div>
+          <div class="fld"><label>Возраст</label><input type="text" id="dpAge" inputmode="numeric" maxlength="2" placeholder="18+"></div>
+        </div>
+        <div class="fld"><label>Я</label><div class="seg" id="dpGender"><button type="button" data-v="m">Парень</button><button type="button" data-v="f">Девушка</button></div></div>
+        <div class="fld"><label>Ищу</label><div class="seg" id="dpSeek"><button type="button" data-v="f">Девушек</button><button type="button" data-v="m">Парней</button><button type="button" data-v="any">Всех</button></div></div>
+        <div class="fld"><label>Город</label><input type="text" id="dpCity" maxlength="30" placeholder="Например, Самара"></div>
+        <div class="fld"><label>О себе</label><textarea id="dpBio" maxlength="300" placeholder="Пара слов: чем увлекаешься, кого ищешь"></textarea><span class="cnt" id="dpCnt">0/300</span></div>
+        <label class="check card"><input type="checkbox" id="dpTg"><span class="box"><svg><use href="#i-check"/></svg></span>
+          <span>Показывать мой @username в Telegram тем, с кем у меня пара<small class="muted" id="dpTgHint" hidden><br>В Telegram не указан username (Настройки → Имя пользователя)</small></span></label>
+        <label class="check card" id="dpActiveRow" hidden><input type="checkbox" id="dpActive"><span class="box"><svg><use href="#i-check"/></svg></span><span>Показывать мою анкету другим</span></label>
+        <p class="rules">Только настоящие фото себя, без обнажёнки, рекламы и чужих людей. Анкеты с жалобами скрываются, нарушители блокируются. Анкета и переписка с парами хранятся, пока ты не удалишь анкету.</p>
+        <button class="btn primary wide" id="dpSave">Сохранить анкету</button>
+        <button class="btn ghost wide" id="dpDelete" style="color:#ff9bb0;margin-top:0" hidden>Удалить анкету</button>
+      </div>
+    </div>
+    <input type="file" id="dpFile" accept="image/*" multiple hidden>
+  </section>
+
+  <!-- Переписка с парой -->
+  <section id="s-dchat" class="screen">
+    <header class="topbar chat-top">
+      <button class="icon-btn" data-back><svg><use href="#i-back"/></svg></button>
+      <span class="avatar dav"><svg><use href="#i-mask"/></svg><img id="dcImg" alt=""></span>
+      <div class="who"><b id="dcName">—</b><small id="dcSub"></small></div>
+      <button class="icon-btn" id="dcTg" title="Открыть в Telegram" hidden><svg><use href="#i-plane"/></svg></button>
+      <button class="icon-btn" id="dcMenu" title="Удалить пару"><svg><use href="#i-x"/></svg></button>
+    </header>
+    <div class="messages" id="dMsgs"></div>
+    <form class="composer" id="dComposer" autocomplete="off">
+      <input id="dInput" placeholder="Сообщение" maxlength="1000" enterkeyhint="send">
+      <button class="send" type="submit"><svg><use href="#i-send"/></svg></button>
+    </form>
   </section>
 
   <!-- Админка (вкладка видна только админам из ADMIN_IDS) -->
@@ -423,13 +580,17 @@ svg{width:1em;height:1em;flex:none}
         <button class="btn primary" type="submit">Создать</button>
       </form>
       <div id="refList"></div>
+
+      <div class="row-head"><span class="eyebrow">Жалобы на анкеты</span></div>
+      <div id="modList"></div>
     </div>
   </section>
 
   <nav class="tabbar show" id="tabbar">
-    <button data-tab="home" class="on"><svg><use href="#i-chat"/></svg>Чат</button>
-    <button data-tab="profile"><svg><use href="#i-user"/></svg>Профиль</button>
-    <button data-tab="admin" id="tabAdmin" hidden><svg><use href="#i-shield"/></svg>Админ</button>
+    <button data-tab="home" class="on"><svg><use href="#i-chat"/></svg><span>Чат</span></button>
+    <button data-tab="dating"><svg><use href="#i-heart"/></svg><span>Знакомства</span><i class="tdot" id="dDot"></i></button>
+    <button data-tab="profile"><svg><use href="#i-user"/></svg><span>Профиль</span></button>
+    <button data-tab="admin" id="tabAdmin" hidden><svg><use href="#i-shield"/></svg><span>Админ</span></button>
   </nav>
 
   <!-- Premium sheet -->
@@ -437,9 +598,19 @@ svg{width:1em;height:1em;flex:none}
   <div class="sheet" id="sheet">
     <span class="star big"><svg><use href="#i-star"/></svg></span>
     <h3>Маска Premium</h3>
-    <p class="muted">Темы «Флирт», «18+», «Музыка», «Игры», «Кино», фильтры по полу и месту, возврат собеседника.</p>
+    <p class="muted">Темы «Флирт», «18+», «Музыка», «Игры», «Кино», фильтры по полу и месту, возврат собеседника. В «Знакомствах» сначала показываем тех, кто уже тебя лайкнул.</p>
     <button class="btn primary wide" id="btnBuy">Оформить · 150 ⭐ в месяц</button>
     <button class="btn ghost wide" id="btnSheetClose">Не сейчас</button>
+  </div>
+  <!-- Это пара! -->
+  <div class="dmatch" id="dMatch" hidden>
+    <div class="dm-in">
+      <h2 class="grad">Это пара!</h2>
+      <p class="muted">Вы с <b id="dmName"></b> понравились друг другу</p>
+      <div class="dm-avs"><span class="dm-av"><img id="dmMe" alt=""></span><span class="dm-av"><img id="dmThem" alt=""></span></div>
+      <button class="btn primary wide" id="dmWrite">Написать</button>
+      <button class="btn ghost wide" id="dmClose">Продолжить</button>
+    </div>
   </div>
   <div class="toast" id="toast"></div>
 </div>
@@ -464,6 +635,9 @@ svg{width:1em;height:1em;flex:none}
     <symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m20 11.5-8 8a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7L9.7 17.2a1.7 1.7 0 0 1-2.4-2.4l7.6-7.6"/></symbol>
     <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></symbol>
     <symbol id="i-plane" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4 3 11l6 2.2L11 20l3.2-4.3L19 19z"/><path d="m9 13.2 12-9.2"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-5.7-6.5-11a6.5 6.5 0 0 1 13 0c0 5.3-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
     <symbol id="i-refresh"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v5h-5"/></symbol>
     <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.5c0 4.4 3 7.8 7 9.5 4-1.7 7-5.1 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.7-3.6 3.7-5.5 7.5-5.5s6.8 1.9 7.5 5.5"/></symbol>
