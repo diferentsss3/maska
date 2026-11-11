@@ -551,7 +551,7 @@ svg{width:1em;height:1em;flex:none}
     </form>
   </section>
 
-  <!-- Админка (вкладка видна только админам из ADMIN_IDS) -->
+  <!-- Админка -->
   <section id="s-admin" class="screen">
     <header class="topbar">
       <div class="brand">Админка</div>
@@ -562,6 +562,24 @@ svg{width:1em;height:1em;flex:none}
         <button data-days="7">7 дней</button><button data-days="30" class="on">30 дней</button><button data-days="90">90 дней</button>
       </div>
       <div class="kpis" id="adminKpis"></div>
+
+      <!-- === НОВОЕ: Управление сервисом === -->
+      <div class="row-head"><span class="eyebrow">Управление сервисом</span></div>
+      <div class="card ref">
+        <div class="ref-top"><b>Накрутка онлайна</b></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <input type="text" id="admFake" inputmode="numeric" placeholder="0"
+            style="flex:1;min-width:0;height:44px;padding:0 14px;border-radius:14px;border:1px solid var(--line2);background:var(--glass);color:var(--text);font:inherit;outline:none">
+          <button class="btn primary" id="admFakeSave"
+            style="height:44px;padding:0 18px;font-size:14px;border-radius:14px">OK</button>
+        </div>
+        <div style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div><b style="font-size:14px">Боты-собеседники</b>
+            <div class="muted" style="font-size:12px">Отвечают за живых в случайном чате</div></div>
+          <div class="seg" id="admBots"><button data-v="1">Вкл</button><button data-v="0">Выкл</button></div>
+        </div>
+      </div>
+      <!-- === /НОВОЕ === -->
 
       <div class="card chart">
         <div class="ch-head"><b>Рост пользователей</b><small id="chUsersSub"></small></div>
@@ -593,7 +611,6 @@ svg{width:1em;height:1em;flex:none}
     <button data-tab="admin" id="tabAdmin" hidden><svg><use href="#i-shield"/></svg><span>Админ</span></button>
   </nav>
 
-  <!-- Premium sheet -->
   <div class="sheet-bg" id="sheetBg"></div>
   <div class="sheet" id="sheet">
     <span class="star big"><svg><use href="#i-star"/></svg></span>
@@ -602,7 +619,6 @@ svg{width:1em;height:1em;flex:none}
     <button class="btn primary wide" id="btnBuy">Оформить · 150 ⭐ в месяц</button>
     <button class="btn ghost wide" id="btnSheetClose">Не сейчас</button>
   </div>
-  <!-- Это пара! -->
   <div class="dmatch" id="dMatch" hidden>
     <div class="dm-in">
       <h2 class="grad">Это пара!</h2>
@@ -615,7 +631,6 @@ svg{width:1em;height:1em;flex:none}
   <div class="toast" id="toast"></div>
 </div>
 
-<!-- SVG sprite -->
 <svg width="0" height="0" style="position:absolute">
   <defs>
     <symbol id="i-mask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v6c0 5-3.6 8.5-8 9-4.4-.5-8-4-8-9z"/><path d="M8 10.5c.8.8 2 .8 2.8 0M13.2 10.5c.8.8 2 .8 2.8 0"/><path d="M9 15c1.8 1.2 4.2 1.2 6 0"/></symbol>
